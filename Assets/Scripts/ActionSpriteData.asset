@@ -1,0 +1,21 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: aa1836dcd1e71ff458fd3dac7a0d189e, type: 3}
+  m_Name: ActionSpriteData
+  m_EditorClassIdentifier: 
+  collectSprite: {fileID: 21300000, guid: ba9835d0b9a092c4f9985facd5023b93, type: 3}
+  blockSprite: {fileID: 21300000, guid: 4b8b89b38fab4c546b655e4ce72c17c8, type: 3}
+  attackSprite: {fileID: 21300000, guid: 3d27b7d3454d1a440bd26574191e678f, type: 3}
+  fireSprite: {fileID: 21300000, guid: 25e9f9a0fbf254e429df7bd1ad047b6f, type: 3}
+  waterSprite: {fileID: 21300000, guid: b5411e5799fabd4469172b1d3a56d803, type: 3}
+  eggSprite: {fileID: 21300000, guid: cc34eb098755c734ca00ea191e8c76bb, type: 3}
+  reflectSprite: {fileID: 21300000, guid: d8738977dc4b3c64480e4adc0118f588, type: 3}
