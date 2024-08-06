@@ -8,8 +8,7 @@ public class RoundManager : NetworkBehaviour
 {
     public static RoundManager Instance { get; private set; }
 
-    private Dictionary<ulong, List<List<RoundAction>>> m_PlayerRoundData;
-    private int m_CurrentRound;
+    public NetworkVariable<int> m_CurrentRound = new(0);
 
     private void Awake()
     {
@@ -22,8 +21,6 @@ public class RoundManager : NetworkBehaviour
 
     private void Start()
     {
-        m_PlayerRoundData = new Dictionary<ulong, List<List<RoundAction>>>();
-
         GameManager.Instance.OnStartMatchForServer += GameManager_StartMatchForServer;
         GameManager.Instance.OnAdvanceRound += GameManager_AdvanceRound;
     }
@@ -51,7 +48,7 @@ public class RoundManager : NetworkBehaviour
 
         if (IsServer)
         {
-            m_PlayerRoundData.Clear();
+            GameManager.Instance.ClearPlayerActions();
             NetworkManager.Singleton.OnClientConnectedCallback -= ClientConnectedCallback;
             NetworkManager.Singleton.OnClientDisconnectCallback -= ClientDisconnectCallback;
         }
@@ -59,41 +56,33 @@ public class RoundManager : NetworkBehaviour
 
     public void ClientConnectedCallback(ulong clientID)
     {
-        Debug.LogFormat("Round Manager has added player {0}", clientID);
-        m_PlayerRoundData.Add(clientID, new List<List<RoundAction>>());
     }
 
     public void ClientDisconnectCallback(ulong clientID)
     {
-        Debug.LogFormat("Round Manager has removed player {0}", clientID);
-        m_PlayerRoundData.Remove(clientID);
     }
 
     private void GameManager_AdvanceRound()
     {
-        m_CurrentRound++;
+        m_CurrentRound.Value++;
     }
 
     private void GameManager_StartMatchForServer()
     {
         if (IsServer)
         {
-            foreach (KeyValuePair<ulong, List<List<RoundAction>>> playerRoundData in m_PlayerRoundData)
-            {
-                playerRoundData.Value.Add(new List<RoundAction>());
-            }
-            m_CurrentRound = 0;
+            m_CurrentRound.Value = 0;
         }
     }
 
-    private void DecideRound()
+    public void DecideRound(Dictionary<ulong, ActionType> playerRoundData)
     {
         if (!IsServer)
         {
             return;
         }
 
-        var enumerator = m_PlayerRoundData.GetEnumerator();
+        var enumerator = playerRoundData.GetEnumerator();
         //for (int i = 0; i < GameManager.k_PlayersPerGame; i++)
         //{
         //    if (enumerator.MoveNext())
@@ -103,12 +92,12 @@ public class RoundManager : NetworkBehaviour
         //}
         enumerator.MoveNext();
         ulong player1 = enumerator.Current.Key;
-        ActionType action1 = enumerator.Current.Value[GameManager.Instance.m_AtMatch.Value - 1][m_CurrentRound - 1].selectedAction;
+        ActionType action1 = enumerator.Current.Value;
 
         if (enumerator.MoveNext())
         {
             ulong player2 = enumerator.Current.Key;
-            ActionType action2 = enumerator.Current.Value[GameManager.Instance.m_AtMatch.Value - 1][m_CurrentRound - 1].selectedAction;
+            ActionType action2 = enumerator.Current.Value;
 
             ActionMatchupResult result = ActionLogic.GetResult(action1, action2);
 
@@ -139,28 +128,5 @@ public class RoundManager : NetworkBehaviour
         {
             GameManager.Instance.GoldChange(player1, ActionLogic.GetGoldChange(action1));
         }
-    }
-
-    public void ReceiveAction(ulong playerID, ActionType gameAction)
-    {
-        if (!IsServer)
-        {
-            return;
-        }
-
-        RoundAction roundAction = new(gameAction, playerID);
-        m_PlayerRoundData[playerID][GameManager.Instance.m_AtMatch.Value - 1].Add(roundAction);
-
-        foreach (KeyValuePair<ulong, List<List<RoundAction>>> playerRoundData in m_PlayerRoundData)
-        {
-            if (playerRoundData.Value[GameManager.Instance.m_AtMatch.Value - 1].Count != m_CurrentRound)
-            {
-                Debug.LogFormat("player {0} has not sent enough actions, currently on round {1} with only {2} actions sent", playerRoundData.Key, m_CurrentRound, playerRoundData.Value[GameManager.Instance.m_AtMatch.Value - 1].Count);
-                return;
-            }
-        }
-
-        Debug.LogFormat("all {0} players have sent actions for round {1}, deciding round", m_PlayerRoundData.Count, m_CurrentRound);
-        DecideRound();
     }
 }

@@ -398,6 +398,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: TouchTrail
       objectReference: {fileID: 0}
+    - target: {fileID: 4406281324022645167, guid: 10f174ebc7f84304ebd1ad6a0e329faf, type: 3}
+      propertyPath: m_IsActive
+      value: 1
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -2218,6 +2222,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3634b937e61ff06499177d2d2f877478, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  m_CurrentRound:
+    m_InternalValue: 0
 --- !u!4 &1213183064
 Transform:
   m_ObjectHideFlags: 0
@@ -3763,6 +3769,50 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   m_HorizontalFit: 2
   m_VerticalFit: 0
+--- !u!1 &1939439301
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1939439303}
+  - component: {fileID: 1939439302}
+  m_Layer: 0
+  m_Name: ActionManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1939439302
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1939439301}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f48269d48bde7df40923b4cf8cccb4ac, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!4 &1939439303
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1939439301}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1952874200
 GameObject:
   m_ObjectHideFlags: 0
@@ -4889,6 +4939,7 @@ SceneRoots:
   - {fileID: 2103742191}
   - {fileID: 60733627}
   - {fileID: 1820039850}
+  - {fileID: 1939439303}
   - {fileID: 1213183064}
   - {fileID: 1383090221}
   - {fileID: 892857607}

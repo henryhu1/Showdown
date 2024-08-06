@@ -8,7 +8,7 @@ public class TouchDetection : MonoBehaviour
 {
     public const float k_trailBuffer = 0.01f;
     public const int k_tracePositionBuffer = 5;
-    public const float k_directionSimilarityThreshold = 0.9f;
+    public const float k_directionSimilarityThreshold = 0.95f;
     public const float k_enclosingThreshold = 1;
     public const float k_circleRadiusVarianceThreshold = 900;
 
@@ -17,7 +17,10 @@ public class TouchDetection : MonoBehaviour
     private int m_directionChanges;
     private bool m_isTracingSameInitialDirection;
     private bool m_isInitiallyTracingUpwards;
+    private bool m_hasTracedUpwards;
     private bool m_hasTracedDownwards;
+    private bool m_hasTracedLeftwards;
+    private bool m_hasTracedRightwards;
     private bool m_hasTracedDown;
     private bool m_hasTracedUp;
     private bool m_hasTracedLeft;
@@ -45,6 +48,7 @@ public class TouchDetection : MonoBehaviour
         InputManager.Instance.OnEndTouch += InputManager_EndTouch;
 
         UnityEngine.InputSystem.EnhancedTouch.TouchSimulation.Enable();
+        UnityEngine.InputSystem.EnhancedTouch.EnhancedTouchSupport.Enable();
     }
 
     private void OnDisable()
@@ -54,6 +58,7 @@ public class TouchDetection : MonoBehaviour
         InputManager.Instance.OnEndTouch -= InputManager_EndTouch;
 
         UnityEngine.InputSystem.EnhancedTouch.TouchSimulation.Disable();
+        UnityEngine.InputSystem.EnhancedTouch.EnhancedTouchSupport.Disable();
     }
 
     private void Update()
@@ -76,7 +81,6 @@ public class TouchDetection : MonoBehaviour
         m_trailDrawingCoroutine = null;
         m_trailRenderer.emitting = false;
         m_trailRenderer.Clear();
-        m_trail.SetActive(false);
 
         DetectTouch();
     }
@@ -90,7 +94,10 @@ public class TouchDetection : MonoBehaviour
         m_directionChanges = 0;
         m_isTracingSameInitialDirection = true;
         m_isInitiallyTracingUpwards = true;
+        m_hasTracedUpwards = false;
         m_hasTracedDownwards = false;
+        m_hasTracedLeftwards = false;
+        m_hasTracedRightwards = false;
         m_hasTracedDown = false;
         m_hasTracedUp = false;
         m_hasTracedLeft = false;
@@ -112,7 +119,6 @@ public class TouchDetection : MonoBehaviour
         m_trailDrawingCoroutine = null;
         m_trailRenderer.emitting = false;
         m_trailRenderer.Clear();
-        m_trail.SetActive(false);
 
         //m_endPos = position;
         //m_touchPosList.Add(position);
@@ -131,7 +137,7 @@ public class TouchDetection : MonoBehaviour
 
         bool isEnclosed = traceDirection.magnitude <= k_enclosingThreshold;
         bool hasTracedAllDirections = m_hasTracedUp && m_hasTracedDown && m_hasTracedLeft && m_hasTracedRight;
-        bool hasTracedTriangle = (m_hasTracedLeft ^ m_hasTracedRight) && m_hasTracedUp && m_hasTracedDown;
+        bool hasTracedTriangle = (m_hasTracedLeft ^ m_hasTracedRight) && m_hasTracedUpwards && m_hasTracedDownwards;
 
         if (m_isTracingSameInitialDirection)
         {
@@ -149,15 +155,15 @@ public class TouchDetection : MonoBehaviour
             Debug.Log("Circular trace");
             GameManager.Instance.EnqueueAction(ActionType.Egg);
         }
-        else if (m_isInitiallyTracingUpwards && m_hasTracedDownwards)
-        {
-            Debug.Log("Up-down trace");
-            GameManager.Instance.EnqueueAction(ActionType.Fire);
-        }
         else if (hasTracedTriangle && isEnclosed)
         {
             Debug.Log("Triangular trace");
             GameManager.Instance.EnqueueAction(ActionType.Reflect);
+        }
+        else if (m_isInitiallyTracingUpwards && m_hasTracedDownwards)
+        {
+            Debug.Log("Up-down trace");
+            GameManager.Instance.EnqueueAction(ActionType.Fire);
         }
     }
 
@@ -188,10 +194,13 @@ public class TouchDetection : MonoBehaviour
                 if (m_initialDirection == Vector2.zero)
                 {
                     m_initialDirection = (m_touchPosList.Last() - m_touchPosList.First()).normalized;
+                    if (m_initialDirection != Vector2.zero)
+                    {
+                        m_isInitiallyTracingUpwards = IsTracingUpwards(m_initialDirection);
+                    }
                 }
                 else
                 {
-                    m_isInitiallyTracingUpwards = IsTracingUpwards(m_initialDirection);
                     currentDirection = touchPos - m_touchPosList[^k_tracePositionBuffer];
                 }
             }
@@ -208,29 +217,76 @@ public class TouchDetection : MonoBehaviour
                     m_isTracingSameInitialDirection = sameDirection;
                 }
 
+                if (!m_hasTracedUpwards)
+                {
+                    m_hasTracedUpwards = IsTracingUpwards(currentDirection);
+                    if (m_hasTracedUpwards)
+                    {
+                        Debug.Log("traced upwards");
+                    }
+                }
+
                 if (!m_hasTracedDownwards)
                 {
                     m_hasTracedDownwards = IsTracingDownwards(currentDirection);
+                    if (m_hasTracedDownwards)
+                    {
+                        Debug.Log("traced downwards");
+                    }
+                }
+
+                if (!m_hasTracedLeftwards)
+                {
+                    m_hasTracedLeftwards = IsTracingLeftwards(currentDirection);
+                    if (m_hasTracedLeftwards)
+                    {
+                        Debug.Log("traced leftwards");
+                    }
+                }
+
+                if (!m_hasTracedRightwards)
+                {
+                    m_hasTracedRightwards = IsTracingRightwards(currentDirection);
+                    if (m_hasTracedRightwards)
+                    {
+                        Debug.Log("traced rightwards");
+                    }
                 }
 
                 if (!m_hasTracedUp)
                 {
                     m_hasTracedUp = IsTracingUp(currentDirection);
+                    if (m_hasTracedUp)
+                    {
+                        Debug.Log("traced up");
+                    }
                 }
 
                 if (!m_hasTracedDown)
                 {
                     m_hasTracedDown = IsTracingDown(currentDirection);
+                    if (m_hasTracedDown)
+                    {
+                        Debug.Log("traced down");
+                    }
                 }
 
                 if (!m_hasTracedLeft)
                 {
                     m_hasTracedLeft = IsTracingLeft(currentDirection);
+                    if (m_hasTracedLeft)
+                    {
+                        Debug.Log("traced left");
+                    }
                 }
 
                 if (!m_hasTracedRight)
                 {
                     m_hasTracedRight = IsTracingRight(currentDirection);
+                    if (m_hasTracedRight)
+                    {
+                        Debug.Log("traced right");
+                    }
                 }
             }
 
@@ -246,6 +302,15 @@ public class TouchDetection : MonoBehaviour
     private bool IsTracingDownwards(Vector2 path)
     {
         return IsSameDirection(Vector2.down, path, 0);
+    }
+    private bool IsTracingLeftwards(Vector2 path)
+    {
+        return IsSameDirection(Vector2.left, path, 0);
+    }
+
+    private bool IsTracingRightwards(Vector2 path)
+    {
+        return IsSameDirection(Vector2.right, path, 0);
     }
 
     private bool IsTracingUp(Vector2 path)
@@ -272,7 +337,7 @@ public class TouchDetection : MonoBehaviour
     {
         if (direction == Vector2.zero || otherDirection == Vector2.zero) { return false; }
 
-        float similarity = Mathf.Abs(Vector2.Dot(direction.normalized, otherDirection.normalized));
+        float similarity = Vector2.Dot(direction.normalized, otherDirection.normalized);
         return similarity > threshold;
     }
 

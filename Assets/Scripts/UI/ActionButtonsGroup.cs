@@ -6,10 +6,8 @@ public class ActionButtonsGroup : MonoBehaviour
 {
     public static ActionButtonsGroup Instance { get; private set; }
 
-    public static Color s_enabledButtonColor = new Color(1, 1, 1, 1);
-    public static Color s_disabledButtonColor = new Color(1, 1, 1, 0.3f);
-    public static Color s_defaultButtonColor = new Color(0.5647f, 0.3019f, 0.0118f);
-    public static Color s_selectedButtonColor = new Color(0.5647f, 0.3019f, 0.0118f);
+    public static Color s_enabledButtonColor = new(1, 1, 1, 1);
+    public static Color s_disabledButtonColor = new(1, 1, 1, 0.3f);
 
     [SerializeField] private ActionButton m_attackButton;
     [SerializeField] private ActionButton m_blockButton;
@@ -63,6 +61,7 @@ public class ActionButtonsGroup : MonoBehaviour
     private void OnDisable()
     {
         GameManager.Instance.OnEnableActionsToBePlayed -= GameManager_EnableActionsToBePlayed;
+        GameManager.Instance.OnDisableActionsToBePlayed -= GameManager_DisableActionsToBePlayed;
         GameManager.Instance.OnAllowedToAttack -= GameManager_AllowedToAttack;
         GameManager.Instance.OnNotAllowedToAttack -= GameManager_NotAllowedToAttack;
         m_attackButton.RemoveOnClickListeners();

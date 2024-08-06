@@ -20,8 +20,8 @@ namespace GameActions
         {
             { ActionType.Collect, new() },
             { ActionType.Block, new() },
-            { ActionType.Attack, new() { ActionType.Collect, ActionType.Fire, ActionType.Egg, } },
-            { ActionType.Fire, new() { ActionType.Collect, ActionType.Block, ActionType.Egg, } },
+            { ActionType.Attack, new() { ActionType.Collect, ActionType.Egg, } },
+            { ActionType.Fire, new() { ActionType.Collect, ActionType.Fire, ActionType.Egg, } },
             { ActionType.Water, new() { ActionType.Collect, ActionType.Attack, ActionType.Fire, } },
             { ActionType.Egg, new() { ActionType.Collect, ActionType.Water, ActionType.Reflect, } },
             { ActionType.Reflect, new() { ActionType.Attack, } },
@@ -43,6 +43,19 @@ namespace GameActions
                 return cost;
             }
             throw new ArgumentException($"Game Action {gameAction} not recognized.");
+        }
+
+        public static HashSet<ActionType> GetPlayableActionsGivenGold(int goldCount)
+        {
+            HashSet<ActionType> playable = new();
+            foreach (KeyValuePair<ActionType, int> actionCost in actionGoldChange)
+            {
+                if (goldCount + actionCost.Value > 0)
+                {
+                    playable.Add(actionCost.Key);
+                }
+            }
+            return playable;
         }
 
         public static ActionMatchupResult GetResult(ActionType action1, ActionType action2)
