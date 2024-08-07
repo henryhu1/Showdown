@@ -20,34 +20,7 @@ public class GameManager : NetworkBehaviour
     private Dictionary<ulong, PlayerGameData> m_PlayerGameData;
     public NetworkVariable<int> m_AtMatch = new(0);
 
-    private Queue<ActionType> m_ActionQueue;
-
     private Coroutine m_TickCoroutine;
-
-    [HideInInspector]
-    public delegate void AddToQueueDelegateHandler(ActionType gameAction);
-    [HideInInspector]
-    public event AddToQueueDelegateHandler OnAddToQueue;
-
-    [HideInInspector]
-    public delegate void SubmitActionDelegateHandler();
-    [HideInInspector]
-    public event SubmitActionDelegateHandler OnSubmitAction;
-
-    [HideInInspector]
-    public delegate void ActionDequeueDelegateHandler();
-    [HideInInspector]
-    public event ActionDequeueDelegateHandler OnActionDequeue;
-
-    [HideInInspector]
-    public delegate void AllowedToAttackDelegateHandler();
-    [HideInInspector]
-    public event AllowedToAttackDelegateHandler OnAllowedToAttack;
-
-    [HideInInspector]
-    public delegate void NotAllowedToAttackDelegateHandler();
-    [HideInInspector]
-    public event NotAllowedToAttackDelegateHandler OnNotAllowedToAttack;
 
     [HideInInspector]
     public delegate void PlayerGoldChangeDelegateHandler(int newAmount);
@@ -107,7 +80,6 @@ public class GameManager : NetworkBehaviour
     private void Start()
     {
         m_PlayerGameData = new Dictionary<ulong, PlayerGameData>();
-        m_ActionQueue = new Queue<ActionType>();
     }
 
     private void Update()
@@ -229,20 +201,6 @@ public class GameManager : NetworkBehaviour
         }
     }
 
-    public void EnqueueAction(ActionType gameAction, bool force = true)
-    {
-        Debug.LogFormat("Enqueuing action {0}", gameAction);
-        if (m_TickCoroutine == null) return; // TODO: make sure this won't break things
-
-        if (m_ActionQueue.Count > 0 && !force)
-        {
-            return;
-        }
-        m_ActionQueue.Clear();
-        m_ActionQueue.Enqueue(gameAction);
-        OnAddToQueue?.Invoke(gameAction);
-    }
-
     private IEnumerator TickCount()
     {
         float time = 0;
@@ -276,33 +234,21 @@ public class GameManager : NetworkBehaviour
                 {
                     OnMatchCountdown?.Invoke(-ticksPlayed);
                 }
+                // TODO: consolidate ActionManager to subscribe to events instead of directly calling from GameManager
                 else if (ticksPlayed > 0 && isEndTick)
                 {
                     OnAdvanceRound?.Invoke();
                     OnDisableActionsToBePlayed?.Invoke();
-                    SubmitAction();
+                    ActionManager.Instance.SubmitAction();
                 }
                 else if (isEnableActionsTick)
                 {
-                    EnqueueAction(ActionType.Block, false);
+                    ActionManager.Instance.EnqueueAction(ActionType.Block, false);
                     OnEnableActionsToBePlayed?.Invoke();
                 }
             }
             yield return null;
         }
-    }
-
-    private void SubmitAction()
-    {
-        ActionType selectedAction = ActionType.Block;
-        if (m_ActionQueue.Count > 0)
-        {
-            selectedAction = m_ActionQueue.Dequeue();
-            OnActionDequeue?.Invoke();
-        }
-        OnSubmitAction?.Invoke();
-        Debug.LogFormat("action to submit: {0}", selectedAction);
-        SendActionServerRpc(selectedAction);
     }
 
     public void GoldChange(ulong player, int changeAmount)
@@ -385,16 +331,7 @@ public class GameManager : NetworkBehaviour
 
         // OnDisableActionsToBePlayed?.Invoke();
 
-        int attackCost = ActionLogic.GetGoldChange(ActionType.Attack);
-        bool attackEnabled = ActionButtonsGroup.Instance.IsAttackAllowed();
-        if (playerGold + attackCost >= 0 && !attackEnabled)
-        {
-            OnAllowedToAttack?.Invoke();
-        }
-        else if (playerGold + attackCost < 0 && attackEnabled)
-        {
-            OnNotAllowedToAttack?.Invoke();
-        }
+        ActionManager.Instance.SetLocalAllowedActions(playerGold);
     }
 
     [ServerRpc(RequireOwnership = false)]

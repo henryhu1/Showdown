@@ -126,6 +126,7 @@ public class RoundManager : NetworkBehaviour
         }
         else
         {
+            // HACK: for development when only one build is run
             GameManager.Instance.GoldChange(player1, ActionLogic.GetGoldChange(action1));
         }
     }

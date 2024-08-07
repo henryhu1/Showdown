@@ -147,23 +147,23 @@ public class TouchDetection : MonoBehaviour
             if (horizontalSimilarity >= k_directionSimilarityThreshold)
             {
                 Debug.Log("Horizontal trace");
-                GameManager.Instance.EnqueueAction(ActionType.Water);
+                ActionManager.Instance.EnqueueAction(ActionType.Water);
             }
         }
         else if (hasTracedAllDirections && isEnclosed)
         {
             Debug.Log("Circular trace");
-            GameManager.Instance.EnqueueAction(ActionType.Egg);
+            ActionManager.Instance.EnqueueAction(ActionType.Egg);
         }
         else if (hasTracedTriangle && isEnclosed)
         {
             Debug.Log("Triangular trace");
-            GameManager.Instance.EnqueueAction(ActionType.Reflect);
+            ActionManager.Instance.EnqueueAction(ActionType.Reflect);
         }
         else if (m_isInitiallyTracingUpwards && m_hasTracedDownwards)
         {
             Debug.Log("Up-down trace");
-            GameManager.Instance.EnqueueAction(ActionType.Fire);
+            ActionManager.Instance.EnqueueAction(ActionType.Fire);
         }
     }
 

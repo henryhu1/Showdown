@@ -78,7 +78,7 @@ public class SelectedActionArrow : SelectedActionBaseBehaviour
         m_panel.gameObject.SetActive(false);
     }
 
-    public override void GameManager_AddToQueue(ActionType gameAction)
+    public override void ActionManager_AddToQueue(ActionType gameAction)
     {
         m_panel.gameObject.SetActive(true);
         RectTransform actionButtonTransform = ActionButtonsGroup.Instance.GetActionButtonTransform(gameAction);
@@ -93,7 +93,7 @@ public class SelectedActionArrow : SelectedActionBaseBehaviour
         m_animationCoroutine = StartCoroutine(VerticalTransitionAnimation());
     }
 
-    public override void GameManager_SubmitAction()
+    public override void ActionManager_SubmitAction()
     {
         if (m_animationCoroutine != null)
         {

@@ -34,16 +34,16 @@ public class GoldCount : MonoBehaviour
     private void Start()
     {
         GameManager.Instance.OnPlayerGoldChange += GameManager_PlayerGoldChange;
-        GameManager.Instance.OnAddToQueue += GameManager_AddToQueue;
-        GameManager.Instance.OnActionDequeue += GameManager_Dequeue;
+        ActionManager.Instance.OnAddToQueue += ActionManager_AddToQueue;
+        ActionManager.Instance.OnActionDequeue += ActionManager_ActionDequeue;
         //ActionButtonsGroup.Instance.OnDisallowedActionAttempted += ActionButtonsGroup_DisallowedActionAttempted;
     }
 
     private void OnDisable()
     {
         GameManager.Instance.OnPlayerGoldChange -= GameManager_PlayerGoldChange;
-        GameManager.Instance.OnAddToQueue -= GameManager_AddToQueue;
-        GameManager.Instance.OnActionDequeue -= GameManager_Dequeue;
+        ActionManager.Instance.OnAddToQueue -= ActionManager_AddToQueue;
+        ActionManager.Instance.OnActionDequeue -= ActionManager_ActionDequeue;
         //ActionButtonsGroup.Instance.OnDisallowedActionAttempted -= ActionButtonsGroup_DisallowedActionAttempted;
     }
 
@@ -52,7 +52,7 @@ public class GoldCount : MonoBehaviour
         m_countText.text = newAmount.ToString();
     }
 
-    private void GameManager_AddToQueue(ActionType action)
+    private void ActionManager_AddToQueue(ActionType action)
     {
         int goldChange = ActionLogic.GetGoldChange(action);
         m_changeText.enabled = goldChange != 0;
@@ -66,7 +66,7 @@ public class GoldCount : MonoBehaviour
         }
     }
 
-    private void GameManager_Dequeue()
+    private void ActionManager_ActionDequeue()
     {
         m_changeText.enabled = false;
     }

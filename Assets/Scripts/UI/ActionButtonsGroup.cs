@@ -16,13 +16,6 @@ public class ActionButtonsGroup : MonoBehaviour
     private List<ActionButton> m_actionButtonsList;
     private Dictionary<ActionType, ActionButton> m_actionToButton;
 
-    private HashSet<ActionType> m_disallowedActions;
-
-    [HideInInspector]
-    public delegate void DisallowedActionAttemptedDelegateHandler(ActionType disallowedAction);
-    [HideInInspector]
-    public event DisallowedActionAttemptedDelegateHandler OnDisallowedActionAttempted;
-
     private void Awake()
     {
         if (Instance != null && Instance != this)
@@ -39,8 +32,8 @@ public class ActionButtonsGroup : MonoBehaviour
     {
         GameManager.Instance.OnEnableActionsToBePlayed += GameManager_EnableActionsToBePlayed;
         GameManager.Instance.OnDisableActionsToBePlayed += GameManager_DisableActionsToBePlayed;
-        GameManager.Instance.OnAllowedToAttack += GameManager_AllowedToAttack;
-        GameManager.Instance.OnNotAllowedToAttack += GameManager_NotAllowedToAttack;
+        //ActionManager.Instance.OnAllowedToAttack += ActionManager_AllowedToAttack;
+        //ActionManager.Instance.OnNotAllowedToAttack += ActionManager_NotAllowedToAttack;
 
         m_attackButton.AddOnClickListener(ActionButtonClicked, ActionType.Attack);
         m_blockButton.AddOnClickListener(ActionButtonClicked, ActionType.Block);
@@ -53,7 +46,6 @@ public class ActionButtonsGroup : MonoBehaviour
             { ActionType.Block, m_blockButton },
             { ActionType.Collect, m_collectButton },
         };
-        m_disallowedActions = new HashSet<ActionType>();
 
         DisableActions();
     }
@@ -62,8 +54,8 @@ public class ActionButtonsGroup : MonoBehaviour
     {
         GameManager.Instance.OnEnableActionsToBePlayed -= GameManager_EnableActionsToBePlayed;
         GameManager.Instance.OnDisableActionsToBePlayed -= GameManager_DisableActionsToBePlayed;
-        GameManager.Instance.OnAllowedToAttack -= GameManager_AllowedToAttack;
-        GameManager.Instance.OnNotAllowedToAttack -= GameManager_NotAllowedToAttack;
+        //ActionManager.Instance.OnAllowedToAttack -= ActionManager_AllowedToAttack;
+        //ActionManager.Instance.OnNotAllowedToAttack -= ActionManager_NotAllowedToAttack;
         m_attackButton.RemoveOnClickListeners();
         m_blockButton.RemoveOnClickListeners();
         m_collectButton.RemoveOnClickListeners();
@@ -78,27 +70,28 @@ public class ActionButtonsGroup : MonoBehaviour
         }
     }
 
-    private void GameManager_AllowedToAttack()
-    {
-        if (m_disallowedActions.Contains(ActionType.Attack))
-        {
-            m_disallowedActions.Remove(ActionType.Attack);
-        }
-    }
+    //private void ActionManager_AllowedToAttack()
+    //{
+    //    //if (m_disallowedActions.Contains(ActionType.Attack))
+    //    //{
+    //    //    m_disallowedActions.Remove(ActionType.Attack);
+    //    //}
+    //}
 
-    private void GameManager_NotAllowedToAttack()
-    {
-        m_disallowedActions.Add(ActionType.Attack);
-        m_attackButton.SetColor(s_disabledButtonColor);
-    }
+    //private void ActionManager_NotAllowedToAttack()
+    //{
+    //    //m_disallowedActions.Add(ActionType.Attack);
+    //    m_attackButton.SetColor(s_disabledButtonColor);
+    //}
 
     private void GameManager_EnableActionsToBePlayed()
     {
         foreach (KeyValuePair<ActionType, ActionButton> actionToButton in m_actionToButton)
         {
-            actionToButton.Value.SetEnabled(true);
-            Color attackButtonColor = m_disallowedActions.Contains(actionToButton.Key) ? s_disabledButtonColor : s_enabledButtonColor;
-            actionToButton.Value.SetColor(attackButtonColor);
+            bool isActionAllowed = ActionManager.Instance.IsActionAllowed(actionToButton.Key);
+            actionToButton.Value.SetEnabled(isActionAllowed);
+            Color buttonColor = ActionManager.Instance.IsActionAllowed(actionToButton.Key) ? s_enabledButtonColor : s_disabledButtonColor;
+            actionToButton.Value.SetColor(buttonColor);
         }
     }
 
@@ -107,21 +100,9 @@ public class ActionButtonsGroup : MonoBehaviour
         DisableActions();
     }
 
-    public bool IsAttackAllowed()
-    {
-        return !m_disallowedActions.Contains(ActionType.Attack);
-    }
-
     private void ActionButtonClicked(ActionType action)
     {
-        if (m_disallowedActions.Contains(action))
-        {
-            OnDisallowedActionAttempted?.Invoke(action);
-        }
-        else
-        {
-            GameManager.Instance.EnqueueAction(action);
-        }
+        ActionManager.Instance.EnqueueAction(action);
     }
 
     public RectTransform GetActionButtonTransform(ActionType action)
