@@ -16,7 +16,7 @@ public class ActionSpriteManager : MonoBehaviour
         Instance = this;
     }
 
-    public Sprite GetSpriteForAction(ActionType action)
+    public Sprite GetSpriteForAction(GameAction action)
     {
         return actionSpriteData.GetSprite(action);
     }

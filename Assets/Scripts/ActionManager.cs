@@ -8,17 +8,17 @@ public class ActionManager : MonoBehaviour
 {
     public static ActionManager Instance { get; private set; }
 
-    private Dictionary<ActionType, bool> m_localAllowedActions;
+    private Dictionary<GameAction, bool> m_localAllowedActions;
 
-    private Queue<ActionType> m_ActionQueue;
+    private Queue<GameAction> m_ActionQueue;
 
     [HideInInspector]
-    public delegate void AddToQueueDelegateHandler(ActionType gameAction);
+    public delegate void AddToQueueDelegateHandler(GameAction gameAction);
     [HideInInspector]
     public event AddToQueueDelegateHandler OnAddToQueue;
 
     [HideInInspector]
-    public delegate void DisallowedActionAttemptedDelegateHandler(ActionType disallowedAction);
+    public delegate void DisallowedActionAttemptedDelegateHandler(GameAction disallowedAction);
     [HideInInspector]
     public event DisallowedActionAttemptedDelegateHandler OnDisallowedActionAttempted;
 
@@ -53,19 +53,31 @@ public class ActionManager : MonoBehaviour
 
     private void Start()
     {
-        m_ActionQueue = new Queue<ActionType>();
+        m_ActionQueue = new Queue<GameAction>();
 
         m_localAllowedActions = new();
-        foreach (ActionType action in Enum.GetValues(typeof(ActionType)).Cast<ActionType>())
+        foreach (GameAction action in Enum.GetValues(typeof(GameAction)).Cast<GameAction>())
         {
             m_localAllowedActions.Add(action, false);
         }
+
+        GameManager.Instance.OnPlayerGoldChange += GameManager_PlayerGoldChange;
+    }
+
+    private void OnDisable()
+    {
+        GameManager.Instance.OnPlayerGoldChange -= GameManager_PlayerGoldChange;
+    }
+
+    private void GameManager_PlayerGoldChange(int newAmount)
+    {
+        SetLocalAllowedActions(newAmount);
     }
 
     public void SetLocalAllowedActions(int goldTotal)
     {
-        Dictionary<ActionType, bool> playable = new();
-        foreach (ActionType action in Enum.GetValues(typeof(ActionType)).Cast<ActionType>())
+        Dictionary<GameAction, bool> playable = new();
+        foreach (GameAction action in Enum.GetValues(typeof(GameAction)).Cast<GameAction>())
         {
             playable.Add(action, goldTotal + ActionLogic.GetGoldChange(action) >= 0);
         }
@@ -83,12 +95,12 @@ public class ActionManager : MonoBehaviour
         //}
     }
 
-    public bool IsActionAllowed(ActionType gameAction)
+    public bool IsActionAllowed(GameAction gameAction)
     {
         return m_localAllowedActions[gameAction];
     }
 
-    public void EnqueueAction(ActionType gameAction, bool force = true)
+    public void EnqueueAction(GameAction gameAction, bool force = true)
     {
         Debug.LogFormat("Trying to enqueue action {0}", gameAction);
         // if (m_TickCoroutine == null) return; // TODO: make sure this won't break things
@@ -115,7 +127,7 @@ public class ActionManager : MonoBehaviour
 
     public void SubmitAction()
     {
-        ActionType selectedAction = ActionType.Block;
+        GameAction selectedAction = GameAction.Block;
         if (m_ActionQueue.Count > 0)
         {
             selectedAction = m_ActionQueue.Dequeue();

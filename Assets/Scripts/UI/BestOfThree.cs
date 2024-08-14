@@ -12,11 +12,6 @@ public class BestOfThree : MonoBehaviour
     [SerializeField] private Sprite m_unplayed;
     [SerializeField] private Sprite m_win;
     [SerializeField] private Sprite m_loss;
-    [SerializeField] private float m_growShrinkTime = 0.25f;
-    [SerializeField] private float m_growToSize = 2;
-    [SerializeField] private AnimationCurve m_movementCurve;
-
-    private Coroutine m_growShrinkCoroutine;
 
     private void Awake()
     {
@@ -30,7 +25,7 @@ public class BestOfThree : MonoBehaviour
     private void Start()
     {
         m_matchImages = new List<MatchImage>();
-        for (int i = 0; i < GameManager.s_BestOf; i++)
+        for (int i = 0; i < GameManager.k_BestOf; i++)
         {
             MatchImage matchPlayedImage = Instantiate(m_matchImagePrefab);
             matchPlayedImage.transform.SetParent(transform, false);
@@ -38,41 +33,12 @@ public class BestOfThree : MonoBehaviour
         }
         SetAllUnplayed();
 
-        GameManager.Instance.OnMatchWon += GameManager_MatchWon;
-        GameManager.Instance.OnMatchLost += GameManager_MatchLost;
+        GameManager.Instance.OnMatchDecided += GameManager_MatchDecided;
     }
 
     private void OnDisable()
     {
-        GameManager.Instance.OnMatchWon -= GameManager_MatchWon;
-        GameManager.Instance.OnMatchLost -= GameManager_MatchLost;
-    }
-
-    private IEnumerator GrowShrink(MatchImage matchImage)
-    {
-        float time = 0;
-        Vector3 atScale = matchImage.transform.localScale;
-        Vector3 targetScale = matchImage.transform.localScale * m_growToSize;
-        bool isGrowing = true;
-        while (time < 2 * m_growShrinkTime)
-        {
-            if (isGrowing && time > m_growShrinkTime)
-            {
-                isGrowing = false;
-                Vector3 temp = atScale;
-                atScale = targetScale;
-                targetScale = temp;
-                matchImage.transform.localScale = atScale;
-            }
-            time += Time.deltaTime;
-            float step = time % m_growShrinkTime / m_growShrinkTime;
-            float curveStep = m_movementCurve.Evaluate(step);
-            matchImage.transform.localScale = Vector3.Lerp(atScale, targetScale, curveStep);
-            yield return null;
-        }
-
-        matchImage.transform.localScale = targetScale;
-        m_growShrinkCoroutine = null;
+        GameManager.Instance.OnMatchDecided -= GameManager_MatchDecided;
     }
 
     private void AnimateMatchImage(int atMatch)
@@ -82,25 +48,14 @@ public class BestOfThree : MonoBehaviour
             return;
         }
 
-        if (m_growShrinkCoroutine != null)
-        {
-            StopCoroutine(m_growShrinkCoroutine);
-            m_growShrinkCoroutine = null;
-        }
-        m_growShrinkCoroutine = StartCoroutine(GrowShrink(m_matchImages[atMatch]));
+        m_matchImages[atMatch].DoPunchScaleAnimation();
     }
 
-    private void GameManager_MatchWon()
+    private void GameManager_MatchDecided(bool hasPlayerWon)
     {
         int atMatch = GameManager.Instance.m_AtMatch.Value - 1;
-        m_matchImages[atMatch].SetImage(m_win);
-        AnimateMatchImage(atMatch);
-    }
-
-    private void GameManager_MatchLost()
-    {
-        int atMatch = GameManager.Instance.m_AtMatch.Value - 1;
-        m_matchImages[atMatch].SetImage(m_loss);
+        Sprite matchResultSprite = hasPlayerWon ? m_win : m_loss;
+        m_matchImages[atMatch].SetImage(matchResultSprite);
         AnimateMatchImage(atMatch);
     }
 

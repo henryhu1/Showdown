@@ -1,5 +1,3 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -24,6 +22,8 @@ public class GameTickVisualizer : MonoBehaviour
         m_tickInner.sizeDelta = m_tickStartSize;
 
         GameManager.Instance.OnTickTimePasses += GameManager_TickTimePasses;
+        //ActionManager.Instance.OnSubmitAction += ActionManager_SubmitAction;
+        //GameManager.Instance.OnTickBeforeActionSubmit += GameManager_TickBeforeActionSubmit;
         GameManager.Instance.OnDisableActionsToBePlayed += GameManager_DisableActionsToBePlayed;
         GameManager.Instance.OnEnableActionsToBePlayed += GameManager_EnableActionsToBePlayed;
     }
@@ -31,13 +31,15 @@ public class GameTickVisualizer : MonoBehaviour
     private void OnDisable()
     {
         GameManager.Instance.OnTickTimePasses -= GameManager_TickTimePasses;
+        //ActionManager.Instance.OnSubmitAction -= ActionManager_SubmitAction;
+        //GameManager.Instance.OnTickBeforeActionSubmit -= GameManager_TickBeforeActionSubmit;
         GameManager.Instance.OnDisableActionsToBePlayed -= GameManager_DisableActionsToBePlayed;
         GameManager.Instance.OnEnableActionsToBePlayed -= GameManager_EnableActionsToBePlayed;
     }
 
     private void GameManager_TickTimePasses(float time, int ticksPlayed)
     {
-        float step = time / GameManager.s_TimePerTick;
+        float step = time / GameManager.k_TimePerTick;
         float curveStep = m_movementCurve.Evaluate(step);
         m_tickInner.sizeDelta = Vector2.Lerp(m_tickStartSize, m_tickEndSize, curveStep);
     }

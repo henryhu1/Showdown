@@ -78,7 +78,12 @@ public class SelectedActionArrow : SelectedActionBaseBehaviour
         m_panel.gameObject.SetActive(false);
     }
 
-    public override void ActionManager_AddToQueue(ActionType gameAction)
+    public override void GameManager_TickBeforeActionSubmit()
+    {
+        throw new System.NotImplementedException();
+    }
+
+    public override void ActionManager_AddToQueue(GameAction gameAction)
     {
         m_panel.gameObject.SetActive(true);
         RectTransform actionButtonTransform = ActionButtonsGroup.Instance.GetActionButtonTransform(gameAction);

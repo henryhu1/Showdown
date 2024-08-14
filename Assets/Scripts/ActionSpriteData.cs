@@ -11,17 +11,17 @@ public class ActionSpriteData : ScriptableObject
     public Sprite eggSprite;
     public Sprite reflectSprite;
 
-    public Sprite GetSprite(ActionType action)
+    public Sprite GetSprite(GameAction action)
     {
         return action switch
         {
-            ActionType.Collect => collectSprite,
-            ActionType.Block => blockSprite,
-            ActionType.Attack => attackSprite,
-            ActionType.Fire => fireSprite,
-            ActionType.Water => waterSprite,
-            ActionType.Egg => eggSprite,
-            ActionType.Reflect => reflectSprite,
+            GameAction.Collect => collectSprite,
+            GameAction.Block => blockSprite,
+            GameAction.Attack => attackSprite,
+            GameAction.Fire => fireSprite,
+            GameAction.Water => waterSprite,
+            GameAction.Egg => eggSprite,
+            GameAction.Reflect => reflectSprite,
             _ => null,
         };
     }

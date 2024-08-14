@@ -1,4 +1,4 @@
-public enum SceneStates
+public enum SceneState
 {
     MainMenu,
     InGame,

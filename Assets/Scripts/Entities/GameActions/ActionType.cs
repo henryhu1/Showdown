@@ -1,10 +1,6 @@
-public enum ActionType
+﻿public enum ActionType
 {
-    Collect,
-    Block,
-    Attack,
-    Fire,
-    Water,
-    Egg,
-    Reflect,
+    Passive,
+    Defensive,
+    Offensive,
 }

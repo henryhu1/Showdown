@@ -4,18 +4,19 @@ using System.Linq;
 using Unity.Netcode;
 using UnityEngine;
 using GameActions;
-using System;
 
+[DefaultExecutionOrder(-100)]
 public class GameManager : NetworkBehaviour
 {
     public static GameManager Instance { get; private set; }
 
     public const int k_PlayersPerGame = 1;
     public const int k_GoldStartingAmount = 0;
-    public static int s_goldTotalToWin { get; private set; } = 5;
-    public static int s_BestOf { get; private set; } = 3;
-    public static int s_TicksPerRound { get; private set; } = 4;
-    public static float s_TimePerTick { get; private set; } = 0.66f;
+    public const int k_GoldTotalToWin = 5;
+    public const int k_BestOf = 3;
+    public const int k_TicksPerRound = 4;
+    public const float k_TimePerTick = 0.66f;
+    public static float RoundCycle { get { return k_TicksPerRound * k_TimePerTick; } }
 
     private Dictionary<ulong, PlayerGameData> m_PlayerGameData;
     public NetworkVariable<int> m_AtMatch = new(0);
@@ -33,14 +34,9 @@ public class GameManager : NetworkBehaviour
     public event MatchCountdownDelegateHandler OnMatchCountdown;
 
     [HideInInspector]
-    public delegate void MatchWonDelegateHandler();
+    public delegate void MatchDecidedDelegateHandler(bool hasPlayerWon);
     [HideInInspector]
-    public event MatchWonDelegateHandler OnMatchWon;
-
-    [HideInInspector]
-    public delegate void MatchLostDelegateHandler();
-    [HideInInspector]
-    public event MatchLostDelegateHandler OnMatchLost;
+    public event MatchDecidedDelegateHandler OnMatchDecided;
 
     [HideInInspector]
     public delegate void DisableActionsToBePlayedDelegateHandler();
@@ -53,9 +49,24 @@ public class GameManager : NetworkBehaviour
     public event EnableActionsToBePlayedDelegateHandler OnEnableActionsToBePlayed;
 
     [HideInInspector]
+    public delegate void TickBeforeActionSubmitDelegateHandler();
+    [HideInInspector]
+    public event TickBeforeActionSubmitDelegateHandler OnTickBeforeActionSubmit;
+
+    [HideInInspector]
     public delegate void StartMatchForServerDelegateHandler();
     [HideInInspector]
     public event StartMatchForServerDelegateHandler OnStartMatchForServer;
+
+    [HideInInspector]
+    public delegate void ActionsDoneDelegateHandler(GameAction playerAction, GameAction opponentAction);
+    [HideInInspector]
+    public event ActionsDoneDelegateHandler OnActionsDone;
+
+    [HideInInspector]
+    public delegate void OpponentGoldStateDelegateHandler(GoldState opponentGoldState);
+    [HideInInspector]
+    public event OpponentGoldStateDelegateHandler OnOpponentGoldState;
 
     [HideInInspector]
     public delegate void AdvanceRoundDelegateHandler();
@@ -104,7 +115,7 @@ public class GameManager : NetworkBehaviour
         {
         }
 
-        SceneTransitionHandler.Instance.SetSceneState(SceneStates.InGame);
+        SceneTransitionHandler.Instance.SetSceneState(SceneState.InGame);
 
         if (IsServer)
         {
@@ -204,7 +215,7 @@ public class GameManager : NetworkBehaviour
     private IEnumerator TickCount()
     {
         float time = 0;
-        int ticksPlayed = -s_TicksPerRound;
+        int ticksPlayed = -k_TicksPerRound;
         OnDisableActionsToBePlayed?.Invoke();
         while (true) // TODO: condition for round timer to be playing
         {
@@ -213,13 +224,13 @@ public class GameManager : NetworkBehaviour
             OnTickTimePasses?.Invoke(time, ticksPlayed); // TODO: should each time update be invoking an event?
             // Other solution: have GameTickVisualizer run its own coroutine, but these ticks and the visualizer may be out of sync?
 
-            if (time >= s_TimePerTick)
+            if (time >= k_TimePerTick)
             {
                 time = 0;
                 ticksPlayed++;
 
-                bool isEndTick = ticksPlayed % s_TicksPerRound == 0;
-                bool isEnableActionsTick = (ticksPlayed + 1) % s_TicksPerRound == 0;
+                bool isEndTick = ticksPlayed % k_TicksPerRound == 0;
+                bool isEnableActionsTick = (ticksPlayed + 1) % k_TicksPerRound == 0;
 
                 if (isEndTick)
                 {
@@ -243,7 +254,8 @@ public class GameManager : NetworkBehaviour
                 }
                 else if (isEnableActionsTick)
                 {
-                    ActionManager.Instance.EnqueueAction(ActionType.Block, false);
+                    ActionManager.Instance.EnqueueAction(GameAction.Block, false);
+                    //OnTickBeforeActionSubmit?.Invoke();
                     OnEnableActionsToBePlayed?.Invoke();
                 }
             }
@@ -251,37 +263,49 @@ public class GameManager : NetworkBehaviour
         }
     }
 
-    public void GoldChange(ulong player, int changeAmount)
+    // TODO: refactor signature to combine player and action
+    public void RoundEnd(ulong player, GameAction playerAction, ulong opponent, GameAction opponentAction)
     {
         if (!IsServer)
         {
             return;
         }
 
+        int changeAmount = ActionLogic.GetGoldChange(playerAction);
+
         if (m_PlayerGameData.TryGetValue(player, out PlayerGameData playerGameData))
         {
             playerGameData.ChangeGold(changeAmount);
             Debug.LogFormat("player {0} now has {1} gold", player, playerGameData.GoldTotal);
             SetupPlayerActionsGivenGoldClientRpc(playerGameData.GoldTotal, RpcTarget.Single(player, RpcTargetUse.Temp));
-            if (playerGameData.GoldTotal >= s_goldTotalToWin)
+            ActionsDoneClientRpc(playerAction, opponentAction, RpcTarget.Single(player, RpcTargetUse.Temp));
+
+            if (playerGameData.GoldTotal >= k_GoldTotalToWin)
             {
                 MatchDecided(player);
+                return;
             }
-            //GoldChangeClientRpc(playerGameData.goldTotal, RpcTarget.Single(player, RpcTargetUse.Temp));
-            //if (changeAmount < 0 && playerGameData.goldTotal < Mathf.Abs(s_AttackCost))
-            //{
-            //    DisableAttackClientRpc(RpcTarget.Single(player, RpcTargetUse.Temp));
-            //}
-            //else if (playerGameData.goldTotal - changeAmount < Mathf.Abs(s_AttackCost) && playerGameData.goldTotal >= Mathf.Abs(s_AttackCost))
-            //{
-            //    EnableAttackClientRpc(RpcTarget.Single(player, RpcTargetUse.Temp));
-            //}
+
+            GoldState playerGoldState;
+            if (playerGameData.GoldTotal == k_GoldTotalToWin / 2)
+            {
+                playerGoldState = GoldState.Mid;
+            }
+            else if (playerGameData.GoldTotal + ActionLogic.GetGoldChange(GameAction.Collect) == k_GoldTotalToWin)
+            {
+                playerGoldState = GoldState.High;
+            }
+            else
+            {
+                playerGoldState = GoldState.Low;
+            }
+            OpponentGoldStateClientRpc(playerGoldState, RpcTarget.Single(opponent, RpcTargetUse.Temp));
         }
     }
 
     public int FirstTo()
     {
-        return Mathf.FloorToInt(s_BestOf / 2 + 1);
+        return Mathf.FloorToInt(k_BestOf / 2 + 1);
     }
 
     public void MatchDecided(ulong winner)
@@ -295,9 +319,12 @@ public class GameManager : NetworkBehaviour
         losers.Remove(winner);
         if (losers.Count > 0)
         {
-            MatchLoserClientRpc(RpcTarget.Group(losers, RpcTargetUse.Temp));
+            MatchDecidedClientRpc(false, RpcTarget.Group(losers, RpcTargetUse.Temp));
         }
-        MatchWinnerClientRpc(RpcTarget.Single(winner, RpcTargetUse.Temp));
+        else
+        {
+            MatchDecidedClientRpc(true, RpcTarget.Single(winner, RpcTargetUse.Temp));
+        }
 
         m_PlayerGameData[winner].WonMatch();
         if (m_PlayerGameData[winner].MatchesWon == FirstTo())
@@ -331,11 +358,23 @@ public class GameManager : NetworkBehaviour
 
         // OnDisableActionsToBePlayed?.Invoke();
 
-        ActionManager.Instance.SetLocalAllowedActions(playerGold);
+        //ActionManager.Instance.SetLocalAllowedActions(playerGold); this has been made to respond to OnPlayerGoldChange above
+    }
+
+    [Rpc(SendTo.SpecifiedInParams)]
+    public void ActionsDoneClientRpc(GameAction playerAction, GameAction opponentAction, RpcParams rpcParams)
+    {
+        OnActionsDone?.Invoke(playerAction, opponentAction);
+    }
+
+    [Rpc(SendTo.SpecifiedInParams)]
+    public void OpponentGoldStateClientRpc(GoldState opponentGoldState, RpcParams rpcParams)
+    {
+        OnOpponentGoldState?.Invoke(opponentGoldState);
     }
 
     [ServerRpc(RequireOwnership = false)]
-    public void SendActionServerRpc(ActionType gameAction, ServerRpcParams serverRpcParams = default)
+    public void SendActionServerRpc(GameAction gameAction, ServerRpcParams serverRpcParams = default)
     {
         ulong playerID = serverRpcParams.Receive.SenderClientId;
         Debug.LogFormat("player {0} has sent action {1}", playerID, gameAction);
@@ -344,8 +383,8 @@ public class GameManager : NetworkBehaviour
 
             if (playerData.CanPlayAction(gameAction))
             {
-                Debug.LogFormat("player {0} only has {1} gold which is not enough for {2}, requiring {3} gold, using {4} instead", playerID, playerData.GoldTotal, gameAction, Mathf.Abs(ActionLogic.GetGoldChange(gameAction)), ActionType.Block);
-                gameAction = ActionType.Block;
+                Debug.LogFormat("player {0} only has {1} gold which is not enough for {2}, requiring {3} gold, using {4} instead", playerID, playerData.GoldTotal, gameAction, Mathf.Abs(ActionLogic.GetGoldChange(gameAction)), GameAction.Block);
+                gameAction = GameAction.Block;
             }
 
             Debug.LogFormat("player {0} using action {1}", playerID, gameAction);
@@ -367,8 +406,8 @@ public class GameManager : NetworkBehaviour
             }
 
             Debug.LogFormat("all {0} players have sent actions for round {1}, deciding round", m_PlayerGameData.Count, RoundManager.Instance.m_CurrentRound.Value);
-            Dictionary<ulong, ActionType> currentRoundActions = m_PlayerGameData.Select(
-                playerData => new KeyValuePair<ulong, ActionType>(playerData.Key, playerData.Value.GetAction(m_AtMatch.Value - 1, RoundManager.Instance.m_CurrentRound.Value - 1))
+            Dictionary<ulong, GameAction> currentRoundActions = m_PlayerGameData.Select(
+                playerData => new KeyValuePair<ulong, GameAction>(playerData.Key, playerData.Value.GetAction(m_AtMatch.Value - 1, RoundManager.Instance.m_CurrentRound.Value - 1))
             ).ToDictionary(x => x.Key, x => x.Value);
             RoundManager.Instance.DecideRound(currentRoundActions);
         }
@@ -379,16 +418,8 @@ public class GameManager : NetworkBehaviour
     }
 
     [Rpc(SendTo.SpecifiedInParams)]
-    public void MatchWinnerClientRpc(RpcParams rpcParams)
+    public void MatchDecidedClientRpc(bool hasPlayerWon, RpcParams rpcParams)
     {
-        Debug.LogFormat("This player has won!");
-        OnMatchWon?.Invoke();
-    }
-
-    [Rpc(SendTo.SpecifiedInParams)]
-    public void MatchLoserClientRpc(RpcParams rpcParams)
-    {
-        Debug.LogFormat("This player has lost!");
-        OnMatchLost?.Invoke();
+        OnMatchDecided?.Invoke(hasPlayerWon);
     }
 }

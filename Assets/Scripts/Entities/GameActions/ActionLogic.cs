@@ -5,38 +5,50 @@ namespace GameActions
 {
     public static class ActionLogic
     {
-        private static readonly Dictionary<ActionType, int> actionGoldChange = new()
+        // TODO: refactor to extensions
+        private static readonly Dictionary<GameAction, int> actionGoldChange = new()
         {
-            { ActionType.Collect, 1 },
-            { ActionType.Block, 0 },
-            { ActionType.Attack, -1 },
-            { ActionType.Fire, -3 },
-            { ActionType.Water, -3 },
-            { ActionType.Egg, -4 },
-            { ActionType.Reflect, -1 },
+            { GameAction.Collect, 1 },
+            { GameAction.Block, 0 },
+            { GameAction.Attack, -1 },
+            { GameAction.Fire, -3 },
+            { GameAction.Water, -3 },
+            { GameAction.Egg, -4 },
+            { GameAction.Reflect, -1 },
         };
 
-        private static readonly Dictionary<ActionType, HashSet<ActionType>> beatsMap = new()
+        private static readonly Dictionary<GameAction, HashSet<GameAction>> beatsMap = new()
         {
-            { ActionType.Collect, new() },
-            { ActionType.Block, new() },
-            { ActionType.Attack, new() { ActionType.Collect, ActionType.Egg, } },
-            { ActionType.Fire, new() { ActionType.Collect, ActionType.Fire, ActionType.Egg, } },
-            { ActionType.Water, new() { ActionType.Collect, ActionType.Attack, ActionType.Fire, } },
-            { ActionType.Egg, new() { ActionType.Collect, ActionType.Water, ActionType.Reflect, } },
-            { ActionType.Reflect, new() { ActionType.Attack, } },
+            { GameAction.Collect, new() },
+            { GameAction.Block, new() },
+            { GameAction.Attack, new() { GameAction.Collect, GameAction.Egg, } },
+            { GameAction.Fire, new() { GameAction.Collect, GameAction.Fire, GameAction.Egg, } },
+            { GameAction.Water, new() { GameAction.Collect, GameAction.Attack, GameAction.Fire, } },
+            { GameAction.Egg, new() { GameAction.Collect, GameAction.Water, GameAction.Reflect, } },
+            { GameAction.Reflect, new() { GameAction.Attack, } },
         };
 
-        public static bool Beats(ActionType action1, ActionType action2)
+        private static readonly Dictionary<GameAction, ActionType> actionTypes = new()
         {
-            if (beatsMap.TryGetValue(action1, out HashSet<ActionType> beats))
+            { GameAction.Collect, ActionType.Passive },
+            { GameAction.Block, ActionType.Defensive },
+            { GameAction.Reflect, ActionType.Defensive },
+            { GameAction.Attack, ActionType.Offensive },
+            { GameAction.Fire, ActionType.Offensive },
+            { GameAction.Water, ActionType.Offensive },
+            { GameAction.Egg, ActionType.Offensive },
+        };
+
+        public static bool Beats(GameAction action1, GameAction action2)
+        {
+            if (beatsMap.TryGetValue(action1, out HashSet<GameAction> beats))
             {
                 return beats.Contains(action2);
             }
             throw new ArgumentException($"Game Action {action1} not recognized.");
         }
 
-        public static int GetGoldChange(ActionType gameAction)
+        public static int GetGoldChange(GameAction gameAction)
         {
             if (actionGoldChange.TryGetValue(gameAction, out int cost))
             {
@@ -45,10 +57,19 @@ namespace GameActions
             throw new ArgumentException($"Game Action {gameAction} not recognized.");
         }
 
-        public static HashSet<ActionType> GetPlayableActionsGivenGold(int goldCount)
+        public static ActionType GetActionType(GameAction gameAction)
         {
-            HashSet<ActionType> playable = new();
-            foreach (KeyValuePair<ActionType, int> actionCost in actionGoldChange)
+            if (actionTypes.TryGetValue(gameAction, out ActionType actionType))
+            {
+                return actionType;
+            }
+            throw new ArgumentException($"Game Action {gameAction} not recognized.");
+        }
+
+        public static HashSet<GameAction> GetPlayableActionsGivenGold(int goldCount)
+        {
+            HashSet<GameAction> playable = new();
+            foreach (KeyValuePair<GameAction, int> actionCost in actionGoldChange)
             {
                 if (goldCount + actionCost.Value > 0)
                 {
@@ -58,7 +79,7 @@ namespace GameActions
             return playable;
         }
 
-        public static ActionMatchupResult GetResult(ActionType action1, ActionType action2)
+        public static ActionMatchupResult GetResult(GameAction action1, GameAction action2)
         {
             if (Beats(action1, action2))
             {

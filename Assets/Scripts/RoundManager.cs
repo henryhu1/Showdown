@@ -75,7 +75,7 @@ public class RoundManager : NetworkBehaviour
         }
     }
 
-    public void DecideRound(Dictionary<ulong, ActionType> playerRoundData)
+    public void DecideRound(Dictionary<ulong, GameAction> playerRoundData)
     {
         if (!IsServer)
         {
@@ -92,12 +92,12 @@ public class RoundManager : NetworkBehaviour
         //}
         enumerator.MoveNext();
         ulong player1 = enumerator.Current.Key;
-        ActionType action1 = enumerator.Current.Value;
+        GameAction action1 = enumerator.Current.Value;
 
         if (enumerator.MoveNext())
         {
             ulong player2 = enumerator.Current.Key;
-            ActionType action2 = enumerator.Current.Value;
+            GameAction action2 = enumerator.Current.Value;
 
             ActionMatchupResult result = ActionLogic.GetResult(action1, action2);
 
@@ -120,14 +120,14 @@ public class RoundManager : NetworkBehaviour
                 //{
                 //    GameManager.Instance.GoldChange(takenAction.Key, ActionLogic.GetGoldChange(takenAction.Value));
                 //}
-                GameManager.Instance.GoldChange(player1, ActionLogic.GetGoldChange(action1));
-                GameManager.Instance.GoldChange(player2, ActionLogic.GetGoldChange(action2));
+                GameManager.Instance.RoundEnd(player1, action1, player2, action2);
+                GameManager.Instance.RoundEnd(player2, action2, player1, action1);
             }
         }
         else
         {
             // HACK: for development when only one build is run
-            GameManager.Instance.GoldChange(player1, ActionLogic.GetGoldChange(action1));
+            GameManager.Instance.RoundEnd(player1, action1, player1, action1);
         }
     }
 }

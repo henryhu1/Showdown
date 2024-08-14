@@ -13,8 +13,8 @@ public class PlayerGameData
     private int matchesWon;
     public int MatchesWon { get { return matchesWon; } }
 
-    private List<List<ActionType>> takenActions;
-    private Dictionary<ActionType, bool> allowedActions;
+    private List<List<GameAction>> takenActions;
+    private Dictionary<GameAction, bool> allowedActions;
 
     public PlayerGameData(ulong clientID) {
         clientId = clientID;
@@ -22,7 +22,7 @@ public class PlayerGameData
         matchesWon = 0;
         takenActions = new();
         allowedActions = new();
-        foreach (ActionType action in Enum.GetValues(typeof(ActionType)).Cast<ActionType>())
+        foreach (GameAction action in Enum.GetValues(typeof(GameAction)).Cast<GameAction>())
         {
             allowedActions.Add(action, false);
         }
@@ -36,7 +36,7 @@ public class PlayerGameData
 
     public void AddActionsForMatch()
     {
-        takenActions.Add(new List<ActionType>());
+        takenActions.Add(new List<GameAction>());
     }
 
     public void ChangeGold(int changeAmount)
@@ -47,8 +47,8 @@ public class PlayerGameData
 
     public void UpdatePlayableActions()
     {
-        Dictionary<ActionType, bool> playable = new();
-        foreach (ActionType action in Enum.GetValues(typeof(ActionType)).Cast<ActionType>())
+        Dictionary<GameAction, bool> playable = new();
+        foreach (GameAction action in Enum.GetValues(typeof(GameAction)).Cast<GameAction>())
         {
             playable.Add(action, goldTotal + ActionLogic.GetGoldChange(action) > 0);
         }
@@ -61,18 +61,18 @@ public class PlayerGameData
         matchesWon++;
     }
 
-    public bool CanPlayAction(ActionType gameAction)
+    public bool CanPlayAction(GameAction gameAction)
     {
         return goldTotal + ActionLogic.GetGoldChange(gameAction) < 0;
     }
 
     // TODO: get rid of match indexing, just add to Last() match in list
-    public void PlayAction(int match, ActionType action)
+    public void PlayAction(int match, GameAction action)
     {
         takenActions[match].Add(action);
     }
 
-    public ActionType GetAction(int match, int round)
+    public GameAction GetAction(int match, int round)
     {
         if (match >= 0 && round >= 0 && takenActions.Count >= match + 1 && takenActions[match].Count >= round + 1)
         {

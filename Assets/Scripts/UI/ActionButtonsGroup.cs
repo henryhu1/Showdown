@@ -14,7 +14,7 @@ public class ActionButtonsGroup : MonoBehaviour
     [SerializeField] private ActionButton m_collectButton;
 
     private List<ActionButton> m_actionButtonsList;
-    private Dictionary<ActionType, ActionButton> m_actionToButton;
+    private Dictionary<GameAction, ActionButton> m_actionToButton;
 
     private void Awake()
     {
@@ -24,8 +24,8 @@ public class ActionButtonsGroup : MonoBehaviour
         }
         Instance = this;
 
-        m_attackButton.SetButtonText(ActionLogic.GetGoldChange(ActionType.Attack).ToString());
-        m_collectButton.SetButtonText(ActionLogic.GetGoldChange(ActionType.Collect).ToString());
+        m_attackButton.SetButtonText(ActionLogic.GetGoldChange(GameAction.Attack).ToString());
+        m_collectButton.SetButtonText(ActionLogic.GetGoldChange(GameAction.Collect).ToString());
     }
 
     private void Start()
@@ -35,16 +35,16 @@ public class ActionButtonsGroup : MonoBehaviour
         //ActionManager.Instance.OnAllowedToAttack += ActionManager_AllowedToAttack;
         //ActionManager.Instance.OnNotAllowedToAttack += ActionManager_NotAllowedToAttack;
 
-        m_attackButton.AddOnClickListener(ActionButtonClicked, ActionType.Attack);
-        m_blockButton.AddOnClickListener(ActionButtonClicked, ActionType.Block);
-        m_collectButton.AddOnClickListener(ActionButtonClicked, ActionType.Collect);
+        m_attackButton.AddOnClickListener(ActionButtonClicked, GameAction.Attack);
+        m_blockButton.AddOnClickListener(ActionButtonClicked, GameAction.Block);
+        m_collectButton.AddOnClickListener(ActionButtonClicked, GameAction.Collect);
 
         m_actionButtonsList = new List<ActionButton> { m_attackButton, m_blockButton, m_collectButton };
-        m_actionToButton = new Dictionary<ActionType, ActionButton>
+        m_actionToButton = new Dictionary<GameAction, ActionButton>
         {
-            { ActionType.Attack, m_attackButton },
-            { ActionType.Block, m_blockButton },
-            { ActionType.Collect, m_collectButton },
+            { GameAction.Attack, m_attackButton },
+            { GameAction.Block, m_blockButton },
+            { GameAction.Collect, m_collectButton },
         };
 
         DisableActions();
@@ -86,11 +86,11 @@ public class ActionButtonsGroup : MonoBehaviour
 
     private void GameManager_EnableActionsToBePlayed()
     {
-        foreach (KeyValuePair<ActionType, ActionButton> actionToButton in m_actionToButton)
+        foreach (KeyValuePair<GameAction, ActionButton> actionToButton in m_actionToButton)
         {
             bool isActionAllowed = ActionManager.Instance.IsActionAllowed(actionToButton.Key);
             actionToButton.Value.SetEnabled(isActionAllowed);
-            Color buttonColor = ActionManager.Instance.IsActionAllowed(actionToButton.Key) ? s_enabledButtonColor : s_disabledButtonColor;
+            Color buttonColor = isActionAllowed ? s_enabledButtonColor : s_disabledButtonColor;
             actionToButton.Value.SetColor(buttonColor);
         }
     }
@@ -100,12 +100,12 @@ public class ActionButtonsGroup : MonoBehaviour
         DisableActions();
     }
 
-    private void ActionButtonClicked(ActionType action)
+    private void ActionButtonClicked(GameAction action)
     {
         ActionManager.Instance.EnqueueAction(action);
     }
 
-    public RectTransform GetActionButtonTransform(ActionType action)
+    public RectTransform GetActionButtonTransform(GameAction action)
     {
         return m_actionToButton[action].getButtonRectTransform();
     }

@@ -15,7 +15,7 @@ public class SceneTransitionHandler : MonoBehaviour
     [HideInInspector]
     public event AllClientsLoadedSceneDelegateHandler OnAllClientsLoadedScene;
     [HideInInspector]
-    public delegate void SceneStateChangedDelegateHandler(SceneStates newState);
+    public delegate void SceneStateChangedDelegateHandler(SceneState newState);
     [HideInInspector]
     public event SceneStateChangedDelegateHandler OnSceneStateChanged;
 
@@ -24,7 +24,7 @@ public class SceneTransitionHandler : MonoBehaviour
     public const string k_MainMenuScene = "MainMenuScene";
     public const string k_InGameSceneName = "GameScene";
 
-    private SceneStates m_SceneState;
+    private SceneState m_SceneState;
 
     private void Awake()
     {
@@ -33,7 +33,7 @@ public class SceneTransitionHandler : MonoBehaviour
             Destroy(Instance.gameObject);
         }
         Instance = this;
-        SetSceneState(SceneStates.MainMenu);
+        SetSceneState(SceneState.MainMenu);
         DontDestroyOnLoad(this);
     }
 
@@ -47,7 +47,7 @@ public class SceneTransitionHandler : MonoBehaviour
         NetworkManager.Singleton.SceneManager.OnLoadComplete -= OnLoadComplete;
     }
 
-    public void SetSceneState(SceneStates sceneState)
+    public void SetSceneState(SceneState sceneState)
     {
         m_SceneState = sceneState;
         OnSceneStateChanged?.Invoke(m_SceneState);
@@ -85,18 +85,18 @@ public class SceneTransitionHandler : MonoBehaviour
 
     public bool IsInMainMenuScene()
     {
-        return m_SceneState == SceneStates.MainMenu;
+        return m_SceneState == SceneState.MainMenu;
     }
 
     public bool IsInGameScene()
     {
-        return m_SceneState == SceneStates.InGame;
+        return m_SceneState == SceneState.InGame;
     }
 
     public void ExitAndLoadStartMenu()
     {
         OnClientLoadedScene = null;
-        SetSceneState(SceneStates.MainMenu);
+        SetSceneState(SceneState.MainMenu);
         SceneManager.LoadScene(k_MainMenuScene);
     }
 }

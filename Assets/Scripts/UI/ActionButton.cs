@@ -10,7 +10,7 @@ public class ActionButton : MonoBehaviour
     [SerializeField] private TextMeshProUGUI m_text;
     [SerializeField] private RectTransform m_rectTransform;
 
-    public delegate void ActionButtonOnClickListener(ActionType gameAction);
+    public delegate void ActionButtonOnClickListener(GameAction gameAction);
 
     public RectTransform getButtonRectTransform()
     {
@@ -22,7 +22,7 @@ public class ActionButton : MonoBehaviour
         m_text.text = text;
     }
 
-    public void AddOnClickListener(ActionButtonOnClickListener onClick, ActionType action)
+    public void AddOnClickListener(ActionButtonOnClickListener onClick, GameAction action)
     {
         if (onClick != null)
         {

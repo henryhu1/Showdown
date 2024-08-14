@@ -1,22 +1,27 @@
+using DG.Tweening;
 using GameActions;
 using TMPro;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class GoldCount : MonoBehaviour
 {
     public static GoldCount Instance { get; private set; }
 
+    [SerializeField] private Image m_goldImage;
+    private RectTransform m_goldImageRectTransform;
+    private Vector3 m_goldImageRectTransformPosition;
     [SerializeField] private TextMeshProUGUI m_countText;
     [SerializeField] private TextMeshProUGUI m_changeText;
 
-    private float m_notEnoughGoldAnimationTime = 0.5f;
-    //private float m_notEnoughGoldAnimationTimeQuarter;
-    //private float m_notEnoughGoldAnimationTimeHalf;
-    //private float m_notEnoughGoldAnimationTimeThreeQuarters;
-    //[SerializeField] private AnimationCurve m_movementCurve;
-    //private float m_horizontalOffset = 50;
+    private Vector3 m_punchSideways = new(10, 0, 0);
+    private Vector3 m_punchUpwards = new(0, 30, 0);
+    private Vector3 m_punchCountText = new(0.5f, 0.5f, 0);
 
-    //private Coroutine m_notEnoughGoldCoroutine;
+    private Tween m_punchImageTween;
+    private Tween m_countTextColorTween;
+    private Tween m_changeTextColorTween;
+    private Tween m_almostGoldWinTween;
 
     private void Awake()
     {
@@ -26,9 +31,8 @@ public class GoldCount : MonoBehaviour
         }
         Instance = this;
         m_changeText.enabled = false;
-        //m_notEnoughGoldAnimationTimeHalf = m_notEnoughGoldAnimationTime / 2;
-        //m_notEnoughGoldAnimationTimeQuarter = m_notEnoughGoldAnimationTimeHalf / 4;
-        //m_notEnoughGoldAnimationTimeThreeQuarters = 3 * m_notEnoughGoldAnimationTimeHalf / 4;
+        m_goldImageRectTransform = m_goldImage.rectTransform;
+        m_goldImageRectTransformPosition = m_goldImageRectTransform.localPosition;
     }
 
     private void Start()
@@ -36,7 +40,7 @@ public class GoldCount : MonoBehaviour
         GameManager.Instance.OnPlayerGoldChange += GameManager_PlayerGoldChange;
         ActionManager.Instance.OnAddToQueue += ActionManager_AddToQueue;
         ActionManager.Instance.OnActionDequeue += ActionManager_ActionDequeue;
-        //ActionButtonsGroup.Instance.OnDisallowedActionAttempted += ActionButtonsGroup_DisallowedActionAttempted;
+        ActionManager.Instance.OnDisallowedActionAttempted += ActionManager_DisallowedActionAttempted;
     }
 
     private void OnDisable()
@@ -44,15 +48,27 @@ public class GoldCount : MonoBehaviour
         GameManager.Instance.OnPlayerGoldChange -= GameManager_PlayerGoldChange;
         ActionManager.Instance.OnAddToQueue -= ActionManager_AddToQueue;
         ActionManager.Instance.OnActionDequeue -= ActionManager_ActionDequeue;
-        //ActionButtonsGroup.Instance.OnDisallowedActionAttempted -= ActionButtonsGroup_DisallowedActionAttempted;
+        ActionManager.Instance.OnDisallowedActionAttempted -= ActionManager_DisallowedActionAttempted;
     }
 
     private void GameManager_PlayerGoldChange(int newAmount)
     {
         m_countText.text = newAmount.ToString();
+        m_countText.rectTransform.DOPunchScale(m_punchCountText, GameManager.k_TimePerTick, vibrato: 0, elasticity: 0);
+
+        if (newAmount + ActionLogic.GetGoldChange(GameAction.Collect) == GameManager.k_GoldTotalToWin)
+        {
+            m_almostGoldWinTween = m_goldImageRectTransform.DOPunchPosition(m_punchUpwards, GameManager.k_TimePerTick, vibrato: 0, elasticity: 0).SetLoops(-1);
+        }
+        else if (m_almostGoldWinTween != null)
+        {
+            m_almostGoldWinTween.Kill();
+            m_almostGoldWinTween = null;
+            m_goldImageRectTransform.localPosition = m_goldImageRectTransformPosition;
+        }
     }
 
-    private void ActionManager_AddToQueue(ActionType action)
+    private void ActionManager_AddToQueue(GameAction action)
     {
         int goldChange = ActionLogic.GetGoldChange(action);
         m_changeText.enabled = goldChange != 0;
@@ -71,61 +87,21 @@ public class GoldCount : MonoBehaviour
         m_changeText.enabled = false;
     }
 
-    //private void ActionButtonsGroup_DisallowedActionAttempted(Type disallowedAction)
-    //{
-    //    if (ActionCost.GetCost(disallowedAction) < 0)
-    //    {
-    //        if (m_notEnoughGoldCoroutine != null)
-    //        {
-    //            StopCoroutine(m_notEnoughGoldCoroutine);
-    //            m_notEnoughGoldCoroutine = null;
-    //        }
-    //        m_notEnoughGoldCoroutine = StartCoroutine(NotEnoughGold());
-    //    }
-    //}
+    private void ActionManager_DisallowedActionAttempted(GameAction disallowedAction)
+    {
+        m_punchImageTween.Kill();
+        m_countTextColorTween.Kill();
+        m_changeTextColorTween.Kill();
 
-    //private IEnumerator NotEnoughGold()
-    //{
-    //    float time = 0;
-    //    m_countText.color = Color.red;
-    //    m_changeText.color = Color.red;
-    //    //Vector3 originalPos = transform.position;
-    //    //Vector3 movement = new Vector3(m_horizontalOffset, 0, 0);
-    //    //Vector3 leftPos = originalPos - movement;
-    //    //Vector3 rightPos = originalPos + movement;
-    //    //Vector3 atPos = originalPos;
-    //    //Vector3 targetPos = leftPos;
-    //    //Debug.LogFormat("original: {0}\nmovement: {1}\nleft: {2}\nright:{3}\nat:{4}\ntarget:{5}", originalPos, movement, leftPos, rightPos, atPos, targetPos);
-    //    while (time < m_notEnoughGoldAnimationTime)
-    //    {
-    //        time += Time.deltaTime;
-    //        float step = time / m_notEnoughGoldAnimationTime;
+        m_punchImageTween = m_goldImageRectTransform
+            .DOPunchPosition(m_punchSideways, GameManager.k_TimePerTick)
+            .OnComplete(() => m_goldImageRectTransform.localPosition = m_goldImageRectTransformPosition)
+            .OnKill(() => m_goldImageRectTransform.localPosition = m_goldImageRectTransformPosition);
 
-    //        float colorGreenYellow = Mathf.Lerp(0, 1, step);
-    //        Color color = new Color(1, colorGreenYellow, colorGreenYellow);
-    //        m_countText.color = color;
-    //        m_changeText.color = color;
+        m_countText.color = Color.red;
+        m_changeText.color = Color.red;
 
-    //        //if (time > m_notEnoughGoldAnimationTimeQuarter)
-    //        //{
-    //        //    atPos = targetPos;
-    //        //    targetPos = rightPos;
-    //        //    Debug.LogFormat("original: {0}\nmovement: {1}\nleft: {2}\nright:{3}\nat:{4}\ntarget:{5}\ntime: {6}", originalPos, movement, leftPos, rightPos, atPos, targetPos, time);
-    //        //}
-    //        //else if (time > m_notEnoughGoldAnimationTimeThreeQuarters)
-    //        //{
-    //        //    atPos = targetPos;
-    //        //    targetPos = originalPos;
-    //        //    Debug.LogFormat("original: {0}\nmovement: {1}\nleft: {2}\nright:{3}\nat:{4}\ntarget:{5}\ntime: {6}", originalPos, movement, leftPos, rightPos, atPos, targetPos, time);
-    //        //}
-    //        //float movementStep = m_movementCurve.Evaluate(step / 4);
-    //        //transform.position = Vector3.Lerp(atPos, targetPos, movementStep);
-
-    //        yield return null;
-    //    }
-    //    m_countText.color = Color.white;
-    //    m_changeText.color = Color.white;
-    //    //transform.position = originalPos;
-    //    m_notEnoughGoldCoroutine = null;
-    //}
+        m_countTextColorTween = m_countText.DOColor(Color.white, GameManager.k_TimePerTick).OnComplete(() => m_countText.color = Color.white);
+        m_changeTextColorTween = m_changeText.DOColor(Color.white, GameManager.k_TimePerTick).OnComplete(() => m_changeText.color = Color.white);
+    }
 }
