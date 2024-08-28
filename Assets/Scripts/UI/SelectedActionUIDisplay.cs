@@ -110,7 +110,7 @@ public class SelectedActionUIDisplay : MonoBehaviour
         return m_selectedAction;
     }
 
-    public void SetSprite(GameAction gameAction)
+    public void SetSpriteFromGameAction(GameAction gameAction)
     {
         m_selectedAction = gameAction;
         Sprite actionSprite = ActionSpriteManager.Instance.GetSpriteForAction(gameAction);

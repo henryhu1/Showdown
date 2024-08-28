@@ -21,7 +21,7 @@ public class SceneTransitionHandler : MonoBehaviour
 
     private int m_numberOfClientLoaded;
 
-    public const string k_MainMenuScene = "MainMenuScene";
+    public const string k_MainMenuScene = "StartScene";
     public const string k_InGameSceneName = "GameScene";
 
     private SceneState m_SceneState;
@@ -33,7 +33,16 @@ public class SceneTransitionHandler : MonoBehaviour
             Destroy(Instance.gameObject);
         }
         Instance = this;
-        SetSceneState(SceneState.MainMenu);
+        Scene activeScene = SceneManager.GetActiveScene();
+        switch (activeScene.name)
+        {
+            case k_MainMenuScene:
+                SetSceneState(SceneState.StartScene);
+                break;
+            case k_InGameSceneName:
+                SetSceneState(SceneState.GameScene);
+                break;
+        }
         DontDestroyOnLoad(this);
     }
 
@@ -83,20 +92,25 @@ public class SceneTransitionHandler : MonoBehaviour
         }
     }
 
-    public bool IsInMainMenuScene()
+    public bool AreAllClientsLoaded()
     {
-        return m_SceneState == SceneState.MainMenu;
+        return m_numberOfClientLoaded == NetworkManager.Singleton.ConnectedClients.Count;
+    }
+
+    public bool IsInStartScene()
+    {
+        return m_SceneState == SceneState.StartScene;
     }
 
     public bool IsInGameScene()
     {
-        return m_SceneState == SceneState.InGame;
+        return m_SceneState == SceneState.GameScene;
     }
 
     public void ExitAndLoadStartMenu()
     {
         OnClientLoadedScene = null;
-        SetSceneState(SceneState.MainMenu);
+        SetSceneState(SceneState.StartScene);
         SceneManager.LoadScene(k_MainMenuScene);
     }
 }

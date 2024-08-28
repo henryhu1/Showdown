@@ -24,8 +24,8 @@ public class GameTickVisualizer : MonoBehaviour
         GameManager.Instance.OnTickTimePasses += GameManager_TickTimePasses;
         //ActionManager.Instance.OnSubmitAction += ActionManager_SubmitAction;
         //GameManager.Instance.OnTickBeforeActionSubmit += GameManager_TickBeforeActionSubmit;
-        GameManager.Instance.OnDisableActionsToBePlayed += GameManager_DisableActionsToBePlayed;
-        GameManager.Instance.OnEnableActionsToBePlayed += GameManager_EnableActionsToBePlayed;
+        GameManager.Instance.OnBeforeActionSubmit += GameManager_BeforeActionSubmit;
+        GameManager.Instance.OnTickBeforeActionSubmit += GameManager_TickBeforeActionSubmit;
     }
 
     private void OnDisable()
@@ -33,8 +33,8 @@ public class GameTickVisualizer : MonoBehaviour
         GameManager.Instance.OnTickTimePasses -= GameManager_TickTimePasses;
         //ActionManager.Instance.OnSubmitAction -= ActionManager_SubmitAction;
         //GameManager.Instance.OnTickBeforeActionSubmit -= GameManager_TickBeforeActionSubmit;
-        GameManager.Instance.OnDisableActionsToBePlayed -= GameManager_DisableActionsToBePlayed;
-        GameManager.Instance.OnEnableActionsToBePlayed -= GameManager_EnableActionsToBePlayed;
+        GameManager.Instance.OnBeforeActionSubmit -= GameManager_BeforeActionSubmit;
+        GameManager.Instance.OnTickBeforeActionSubmit  -= GameManager_TickBeforeActionSubmit;
     }
 
     private void GameManager_TickTimePasses(float time, int ticksPlayed)
@@ -44,12 +44,12 @@ public class GameTickVisualizer : MonoBehaviour
         m_tickInner.sizeDelta = Vector2.Lerp(m_tickStartSize, m_tickEndSize, curveStep);
     }
 
-    private void GameManager_EnableActionsToBePlayed()
+    private void GameManager_TickBeforeActionSubmit()
     {
         m_tickInnerImage.color = Colors.Turquoise;
     }
 
-    private void GameManager_DisableActionsToBePlayed()
+    private void GameManager_BeforeActionSubmit()
     {
         m_tickInnerImage.color = Colors.Orange;
     }

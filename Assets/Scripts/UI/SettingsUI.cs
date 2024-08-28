@@ -3,6 +3,8 @@ using UnityEngine.UI;
 
 public class SettingsUI : MonoBehaviour
 {
+    public static SettingsUI Instance { get; private set; }
+
     [SerializeField] private GameObject m_panel;
     private Button m_panelButton;
     [SerializeField] private Button m_settingsButton;
@@ -11,6 +13,12 @@ public class SettingsUI : MonoBehaviour
 
     private void Awake()
     {
+        if (Instance != null && Instance != this)
+        {
+            Destroy(Instance.gameObject);
+        }
+        Instance = this;
+
         m_panel.SetActive(false);
 
         m_panelButton = m_panel.GetComponent<Button>();
@@ -26,5 +34,10 @@ public class SettingsUI : MonoBehaviour
     {
         m_panelButton.onClick.RemoveAllListeners();
         m_settingsButton.onClick.RemoveAllListeners();
+    }
+
+    public bool GetIsSettingsOpen()
+    {
+        return m_panel.activeInHierarchy;
     }
 }

@@ -17,7 +17,7 @@ public class OpponentTower : MonoBehaviour
     private void OnEnable()
     {
         GameManager.Instance.OnActionsDone += GameManager_ActionsDone;
-        GameManager.Instance.OnOpponentGoldState += GameManager_OpponentGoldState; ;
+        GameManager.Instance.OnOpponentGoldState += GameManager_OpponentGoldState;
         GameManager.Instance.OnMatchDecided += GameManager_MatchDecided;
         m_playerSelectedAction.OnTriggerActionInteraction += SelectedAction_TriggerActionInteraction;
     }
@@ -25,7 +25,7 @@ public class OpponentTower : MonoBehaviour
     private void OnDisable()
     {
         GameManager.Instance.OnActionsDone -= GameManager_ActionsDone;
-        GameManager.Instance.OnOpponentGoldState -= GameManager_OpponentGoldState; ;
+        GameManager.Instance.OnOpponentGoldState -= GameManager_OpponentGoldState;
         GameManager.Instance.OnMatchDecided -= GameManager_MatchDecided;
         m_playerSelectedAction.OnTriggerActionInteraction -= SelectedAction_TriggerActionInteraction;
     }
@@ -35,7 +35,7 @@ public class OpponentTower : MonoBehaviour
         GameObject animating = Instantiate(m_selectedActionPrefab, m_opponentAction.transform);
         SelectedActionUIDisplay animatingDisplay = animating.GetComponent<SelectedActionUIDisplay>();
 
-        animatingDisplay.SetSprite(opponentAction);
+        animatingDisplay.SetSpriteFromGameAction(opponentAction);
         m_opponentAnimation = animatingDisplay.DoAnimation(opponentAction, playerAction).OnComplete(() => Destroy(animating));
     }
 
@@ -51,7 +51,7 @@ public class OpponentTower : MonoBehaviour
         m_opponentTowerImage.sprite = opponentTowerSprite;
     }
 
-    private void GameManager_MatchDecided(bool hasPlayerWon)
+    private void GameManager_MatchDecided(bool hasPlayerWon, MatchResult resultType)
     {
         //throw new System.NotImplementedException();
     }

@@ -12,7 +12,7 @@ public class SoundFXManager : MonoBehaviour
     {
         if (Instance != null && Instance != this)
         {
-            Destroy(Instance);
+            Destroy(Instance.gameObject);
         }
         Instance = this;
         DontDestroyOnLoad(this);

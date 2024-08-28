@@ -26,8 +26,6 @@ public class TouchDetection : MonoBehaviour
     private bool m_hasTracedLeft;
     private bool m_hasTracedRight;
 
-    private bool m_isPollingTouch = false;
-
     [SerializeField] private GameObject m_trail;
     private TrailRenderer m_trailRenderer;
 
@@ -43,7 +41,7 @@ public class TouchDetection : MonoBehaviour
     {
         m_touchPosList = new List<Vector2>();
 
-        GameManager.Instance.OnDisableActionsToBePlayed += GameManager_DisableActionsToBePlayed;
+        GameManager.Instance.OnBeforeActionSubmit += GameManager_BeforeActionSubmit;
         InputManager.Instance.OnStartTouch += InputManager_StartTouch;
         InputManager.Instance.OnEndTouch += InputManager_EndTouch;
 
@@ -53,7 +51,7 @@ public class TouchDetection : MonoBehaviour
 
     private void OnDisable()
     {
-        GameManager.Instance.OnDisableActionsToBePlayed -= GameManager_DisableActionsToBePlayed;
+        GameManager.Instance.OnBeforeActionSubmit -= GameManager_BeforeActionSubmit;
         InputManager.Instance.OnStartTouch -= InputManager_StartTouch;
         InputManager.Instance.OnEndTouch -= InputManager_EndTouch;
 
@@ -72,9 +70,9 @@ public class TouchDetection : MonoBehaviour
         }
     }
 
-    private void GameManager_DisableActionsToBePlayed()
+    private void GameManager_BeforeActionSubmit()
     {
-        Debug.LogFormat("Actions done, must figure out trace {0}", m_trailDrawingCoroutine != null);
+        Debug.LogFormat("Going to submit action, must figure out trace {0}", m_trailDrawingCoroutine != null);
         if (m_trailDrawingCoroutine == null) return;
 
         StopCoroutine(m_trailDrawingCoroutine);
@@ -340,30 +338,4 @@ public class TouchDetection : MonoBehaviour
         float similarity = Vector2.Dot(direction.normalized, otherDirection.normalized);
         return similarity > threshold;
     }
-
-    //private bool IsCircleDrawn()
-    //{
-    //    Vector2 firstPos = m_touchPosList.First();
-    //    Vector2 lastPos = m_touchPosList.Last();
-    //    Vector2 firstLastDiff = firstPos - lastPos;
-    //    if (firstLastDiff.magnitude > k_enclosingThreshold)
-    //    {
-    //        return false;
-    //    }
-
-    //    float xCenter = m_touchPosList.Select(pos => pos.x).Average();
-    //    float yCenter = m_touchPosList.Select(pos => pos.y).Average();
-    //    Vector2 centre = new(xCenter, yCenter);
-    //    List<Vector2> radii = new();
-    //    foreach (Vector2 pos in m_touchPosList)
-    //    {
-    //        radii.Add(pos - centre);
-    //    }
-    //    IEnumerable<float> magnitudes = radii.Select(pos => pos.magnitude);
-    //    float avgMagnitude = magnitudes.Average();
-    //    float variance = (magnitudes.Average(magnitude => Mathf.Pow(magnitude - avgMagnitude, 2)));
-    //    Debug.LogFormat("magnitude: {0}\nvariance: {1}", avgMagnitude, variance);
-
-    //    return variance <= k_circleRadiusVarianceThreshold;
-    //}
 }

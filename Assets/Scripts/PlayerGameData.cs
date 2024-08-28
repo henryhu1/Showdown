@@ -2,10 +2,11 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using GameActions;
+using Unity.Netcode;
 
-public class PlayerGameData
+public class PlayerGameData : INetworkSerializable
 {
-    private readonly ulong clientId;
+    private ulong clientId;
 
     private int goldTotal;
     public int GoldTotal { get { return goldTotal; } }
@@ -26,6 +27,12 @@ public class PlayerGameData
         {
             allowedActions.Add(action, false);
         }
+    }
+
+    public void SetupDataForNewMatch()
+    {
+        SetBeginningGold();
+        AddActionsForMatch();
     }
 
     public void SetBeginningGold()
@@ -93,5 +100,11 @@ public class PlayerGameData
     public void ClearActions()
     {
         takenActions.Clear();
+    }
+
+    public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
+    {
+        serializer.SerializeValue(ref clientId);
+        serializer.SerializeValue(ref matchesWon);
     }
 }

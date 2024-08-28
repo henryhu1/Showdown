@@ -1,7 +1,5 @@
-using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.UI;
 
 public class BestOfThree : MonoBehaviour
 {
@@ -17,7 +15,7 @@ public class BestOfThree : MonoBehaviour
     {
         if (Instance != null && Instance != this)
         {
-            Destroy(Instance);
+            Destroy(Instance.gameObject);
         }
         Instance = this;
     }
@@ -51,7 +49,7 @@ public class BestOfThree : MonoBehaviour
         m_matchImages[atMatch].DoPunchScaleAnimation();
     }
 
-    private void GameManager_MatchDecided(bool hasPlayerWon)
+    private void GameManager_MatchDecided(bool hasPlayerWon, MatchResult resultType)
     {
         int atMatch = GameManager.Instance.m_AtMatch.Value - 1;
         Sprite matchResultSprite = hasPlayerWon ? m_win : m_loss;

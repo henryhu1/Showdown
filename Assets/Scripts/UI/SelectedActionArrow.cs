@@ -18,7 +18,7 @@ public class SelectedActionArrow : SelectedActionBaseBehaviour
     {
         if (Instance != null && Instance != this)
         {
-            Destroy(Instance);
+            Destroy(Instance.gameObject);
         }
         Instance = this;
 
@@ -83,7 +83,7 @@ public class SelectedActionArrow : SelectedActionBaseBehaviour
         throw new System.NotImplementedException();
     }
 
-    public override void ActionManager_AddToQueue(GameAction gameAction)
+    public override void ActionManager_ActionEnqueue(GameAction gameAction)
     {
         m_panel.gameObject.SetActive(true);
         RectTransform actionButtonTransform = ActionButtonsGroup.Instance.GetActionButtonTransform(gameAction);
@@ -96,6 +96,11 @@ public class SelectedActionArrow : SelectedActionBaseBehaviour
             StopCoroutine(m_animationCoroutine);
         }
         m_animationCoroutine = StartCoroutine(VerticalTransitionAnimation());
+    }
+
+    public override void ActionManager_ActionDequeue(GameAction gameAction)
+    {
+        m_panel.gameObject.SetActive(false);
     }
 
     public override void ActionManager_SubmitAction()

@@ -43,55 +43,61 @@ public class SelectedActionBox : SelectedActionBaseBehaviour
         base.OnDisable();
     }
 
-    public override void ActionManager_AddToQueue(GameAction gameAction)
+    public override void ActionManager_ActionEnqueue(GameAction gameAction)
     {
-        m_selectedAction.SetSprite(gameAction);
+        m_selectedAction.EnableImage();
+        m_selectedAction.SetSpriteFromGameAction(gameAction);
+    }
+
+    public override void ActionManager_ActionDequeue(GameAction gameAction)
+    {
+        m_selectedAction.DisableImage();
     }
 
     public override void GameManager_EnableActionsToBePlayed()
     {
-        m_selectedAction.EnableImage();
-        m_panelImage.color = Colors.Turquoise;
-        m_selectedAction.SetSolidImageColor();
+        //m_selectedAction.EnableImage();
+        //m_panelImage.color = Colors.Turquoise;
+        //m_selectedAction.SetSolidImageColor();
     }
 
     public override void GameManager_DisableActionsToBePlayed()
     {
-        Color grey = Colors.Grey;
-        m_panelImage.color = new(grey.r, grey.g, grey.b, 0.5f);
-        m_selectedAction.SetTransparentImageColor();
+        SetPanelOff();
     }
 
     public override void GameManager_TickBeforeActionSubmit()
     {
-        m_selectedAction.EnableImage();
+        //m_selectedAction.EnableImage();
         m_panelImage.color = Colors.Turquoise;
         m_selectedAction.SetSolidImageColor();
     }
 
     public override void ActionManager_SubmitAction()
     {
-        Color grey = Colors.Grey;
-        m_panelImage.color = new(grey.r, grey.g, grey.b, 0.5f);
-        m_selectedAction.SetTransparentImageColor();
+        SetPanelOff();
         SubmitActionAnimation();
     }
 
     private void GameManager_ActionsDone(GameAction playerAction, GameAction opponentAction)
     {
-        if (m_tweenSequence != null)
+        m_tweenSequence?.OnComplete(() =>
         {
-            m_tweenSequence.OnComplete(() =>
-            {
-                Tween selectedActionAnimation = m_animatingDisplay.DoAnimation(playerAction, opponentAction);
-                selectedActionAnimation.OnComplete(() =>
-                {
-                    Destroy(m_animatingDisplay.gameObject, GameManager.RoundCycle);
-                }).Play();
+            Tween selectedActionAnimation = m_animatingDisplay.DoAnimation(playerAction, opponentAction);
+            selectedActionAnimation
+                .OnComplete(() => Destroy(m_animatingDisplay.gameObject, GameManager.RoundCycle))
+                .OnKill(() => Destroy(m_animatingDisplay.gameObject, GameManager.RoundCycle))
+                .Play();
 
-                m_tweenSequence = null;
-            });
-        }
+            m_tweenSequence = null;
+        });
+    }
+
+    private void SetPanelOff()
+    {
+        Color grey = Colors.Grey;
+        m_panelImage.color = new(grey.r, grey.g, grey.b, 0.5f);
+        m_selectedAction.SetTransparentImageColor();
     }
 
     private void SubmitActionAnimation()
@@ -99,16 +105,13 @@ public class SelectedActionBox : SelectedActionBaseBehaviour
         GameObject animating = Instantiate(m_selectedActionPrefab, transform);
 
         m_animatingDisplay = animating.GetComponent<SelectedActionUIDisplay>();
-        m_animatingDisplay.SetSprite(m_selectedAction.GetSelectedAction());
+        m_animatingDisplay.SetSpriteFromGameAction(m_selectedAction.GetSelectedAction());
         m_animatingDisplay.SetSolidImageColor();
 
         m_submitActionTween = m_animatingDisplay.GetRectTransform()
             .DOAnchorPosY(m_selectedActionImagePosition.y + m_movementDistance, m_submitAnimationTime)
             .SetEase(Ease.OutSine)
-            .OnComplete(() =>
-            {
-                OnTriggerActionInteraction?.Invoke();
-            });
+            .OnComplete(() => OnTriggerActionInteraction?.Invoke());
         m_tweenSequence = DOTween.Sequence().Append(m_submitActionTween);
     }
 }

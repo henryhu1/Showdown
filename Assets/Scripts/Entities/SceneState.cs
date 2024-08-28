@@ -1,5 +1,5 @@
 public enum SceneState
 {
-    MainMenu,
-    InGame,
+    StartScene,
+    GameScene,
 }

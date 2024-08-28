@@ -9,7 +9,8 @@ public abstract class SelectedActionBaseBehaviour : MonoBehaviour
         GameManager.Instance.OnEnableActionsToBePlayed += GameManager_EnableActionsToBePlayed;
         GameManager.Instance.OnDisableActionsToBePlayed += GameManager_DisableActionsToBePlayed;
         GameManager.Instance.OnTickBeforeActionSubmit += GameManager_TickBeforeActionSubmit;
-        ActionManager.Instance.OnAddToQueue += ActionManager_AddToQueue;
+        ActionManager.Instance.OnActionEnqueue += ActionManager_ActionEnqueue;
+        ActionManager.Instance.OnActionDequeue += ActionManager_ActionDequeue;
         ActionManager.Instance.OnSubmitAction += ActionManager_SubmitAction;
     }
 
@@ -18,7 +19,8 @@ public abstract class SelectedActionBaseBehaviour : MonoBehaviour
         GameManager.Instance.OnEnableActionsToBePlayed -= GameManager_EnableActionsToBePlayed;
         GameManager.Instance.OnDisableActionsToBePlayed -= GameManager_DisableActionsToBePlayed;
         GameManager.Instance.OnTickBeforeActionSubmit -= GameManager_TickBeforeActionSubmit;
-        ActionManager.Instance.OnAddToQueue -= ActionManager_AddToQueue;
+        ActionManager.Instance.OnActionEnqueue -= ActionManager_ActionEnqueue;
+        ActionManager.Instance.OnActionDequeue -= ActionManager_ActionDequeue;
         ActionManager.Instance.OnSubmitAction -= ActionManager_SubmitAction;
     }
 
@@ -28,7 +30,9 @@ public abstract class SelectedActionBaseBehaviour : MonoBehaviour
 
     public abstract void GameManager_TickBeforeActionSubmit();
 
-    public abstract void ActionManager_AddToQueue(GameAction gameAction);
+    public abstract void ActionManager_ActionEnqueue(GameAction gameAction);
+
+    public abstract void ActionManager_ActionDequeue(GameAction gameAction);
 
     public abstract void ActionManager_SubmitAction();
 }

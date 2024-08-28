@@ -25,7 +25,7 @@ public class InputManager : MonoBehaviour
     {
         if (Instance != null && Instance != this)
         {
-            Destroy(Instance);
+            Destroy(Instance.gameObject);
         }
         Instance = this;
 
@@ -37,9 +37,6 @@ public class InputManager : MonoBehaviour
     {
         m_playerControls.Touch.PrimaryContact.started += PrimaryContact_started;
         m_playerControls.Touch.PrimaryContact.canceled += PrimaryContact_canceled;
-
-        GameManager.Instance.OnEnableActionsToBePlayed += GameManager_EnableActionsToBePlayed;
-        GameManager.Instance.OnDisableActionsToBePlayed += GameManager_DisableActionsToBePlayed;
     }
 
     private void OnEnable()
@@ -53,44 +50,30 @@ public class InputManager : MonoBehaviour
 
         m_playerControls.Touch.PrimaryContact.started -= PrimaryContact_started;
         m_playerControls.Touch.PrimaryContact.canceled -= PrimaryContact_canceled;
-
-        GameManager.Instance.OnEnableActionsToBePlayed -= GameManager_EnableActionsToBePlayed;
-        GameManager.Instance.OnDisableActionsToBePlayed -= GameManager_DisableActionsToBePlayed;
     }
 
     private void PrimaryContact_started(InputAction.CallbackContext context)
     {
-        OnStartTouch?.Invoke(GetPrimaryPosition());
+        if (!SettingsUI.Instance.GetIsSettingsOpen() && !GameManager.Instance.m_IsSuddenDeath.Value)
+        {
+            OnStartTouch?.Invoke(GetPrimaryPosition());
+        }
     }
 
     private void PrimaryContact_canceled(InputAction.CallbackContext context)
     {
-        OnEndTouch?.Invoke(GetPrimaryPosition());
-    }
-
-    private void GameManager_EnableActionsToBePlayed()
-    {
-        //m_isPollingTouch = true;
-        //m_touchPosList.Clear();
-    }
-
-    private void GameManager_DisableActionsToBePlayed()
-    {
-        //m_isPollingTouch = false;
-        //if (m_touchPosList.Count > 0)
-        //{
-        //    Debug.Log("Actions disabled, checking what was drawn");
-        //    IsCircleDrawn();
-        //}
-        //m_touchPosList.Clear();
+        if (!GameManager.Instance.m_IsSuddenDeath.Value)
+        {
+            OnEndTouch?.Invoke(GetPrimaryPosition());
+        }
     }
 
     private void Update()
     {
-        //if (Input.acceleration.sqrMagnitude > Mathf.Pow(m_ShakeThreshold, 2))
-        //{
-        //    Debug.Log("shake");
-        //}
+        if (Input.acceleration.sqrMagnitude > Mathf.Pow(m_ShakeThreshold, 2))
+        {
+            Debug.Log("shake");
+        }
     }
 
     public Vector2 GetPrimaryPosition()

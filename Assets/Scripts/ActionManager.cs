@@ -15,7 +15,12 @@ public class ActionManager : MonoBehaviour
     [HideInInspector]
     public delegate void AddToQueueDelegateHandler(GameAction gameAction);
     [HideInInspector]
-    public event AddToQueueDelegateHandler OnAddToQueue;
+    public event AddToQueueDelegateHandler OnActionEnqueue;
+
+    [HideInInspector]
+    public delegate void ActionDequeueDelegateHandler(GameAction gameAction);
+    [HideInInspector]
+    public event ActionDequeueDelegateHandler OnActionDequeue;
 
     [HideInInspector]
     public delegate void DisallowedActionAttemptedDelegateHandler(GameAction disallowedAction);
@@ -26,11 +31,6 @@ public class ActionManager : MonoBehaviour
     public delegate void SubmitActionDelegateHandler();
     [HideInInspector]
     public event SubmitActionDelegateHandler OnSubmitAction;
-
-    [HideInInspector]
-    public delegate void ActionDequeueDelegateHandler();
-    [HideInInspector]
-    public event ActionDequeueDelegateHandler OnActionDequeue;
 
     //[HideInInspector]
     //public delegate void AllowedToAttackDelegateHandler();
@@ -46,7 +46,7 @@ public class ActionManager : MonoBehaviour
     {
         if (Instance != null && Instance != this)
         {
-            Destroy(Instance);
+            Destroy(Instance.gameObject);
         }
         Instance = this;
     }
@@ -79,7 +79,10 @@ public class ActionManager : MonoBehaviour
         Dictionary<GameAction, bool> playable = new();
         foreach (GameAction action in Enum.GetValues(typeof(GameAction)).Cast<GameAction>())
         {
-            playable.Add(action, goldTotal + ActionLogic.GetGoldChange(action) >= 0);
+            bool isActionAllowed = goldTotal + ActionLogic.GetGoldChange(action) >= 0;
+            playable.Add(action, isActionAllowed);
+            // TODO: if more objects or classes need to know when actions become playable/unplayable, make this an event
+            ActionButtonsGroup.Instance.SetActionPlayable(action, isActionAllowed);
         }
         m_localAllowedActions = playable;
 
@@ -107,7 +110,7 @@ public class ActionManager : MonoBehaviour
 
         if (m_ActionQueue.Count > 0 && !force)
         {
-            Debug.LogFormat("Could not enqueue action {0} as ther was already an action queued", gameAction);
+            Debug.LogFormat("Could not enqueue action {0} as there was already an action queued", gameAction);
             return;
         }
 
@@ -116,7 +119,7 @@ public class ActionManager : MonoBehaviour
             Debug.LogFormat("Enqueued action {0}", gameAction);
             m_ActionQueue.Clear();
             m_ActionQueue.Enqueue(gameAction);
-            OnAddToQueue?.Invoke(gameAction);
+            OnActionEnqueue?.Invoke(gameAction);
         }
         else
         {
@@ -131,7 +134,7 @@ public class ActionManager : MonoBehaviour
         if (m_ActionQueue.Count > 0)
         {
             selectedAction = m_ActionQueue.Dequeue();
-            OnActionDequeue?.Invoke();
+            OnActionDequeue?.Invoke(selectedAction);
         }
         OnSubmitAction?.Invoke();
         Debug.LogFormat("action to submit: {0}", selectedAction);
