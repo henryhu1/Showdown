@@ -17,7 +17,11 @@ public class ActionButtonsGroup : MonoBehaviour
     [SerializeField] private Image m_panel;
     [SerializeField] private RectTransform m_buttonGroup;
 
+    private const float k_tweenDuration = 0.3f;
+
     private Vector3 m_buttonGroupOriginalPos;
+    private Camera m_mainCamera;
+    private float m_offScreenDown;
 
     private List<ActionButton> m_actionButtonsList;
     private Dictionary<GameAction, ActionButton> m_actionToButton;
@@ -34,7 +38,6 @@ public class ActionButtonsGroup : MonoBehaviour
 
         m_attackButton.SetButtonText(ActionLogic.GetGoldChange(GameAction.Attack).ToString());
         m_collectButton.SetButtonText(ActionLogic.GetGoldChange(GameAction.Collect).ToString());
-        m_buttonGroupOriginalPos = m_buttonGroup.localPosition;
     }
 
     private void Start()
@@ -43,6 +46,7 @@ public class ActionButtonsGroup : MonoBehaviour
         GameManager.Instance.OnEnableActionsToBePlayed += GameManager_EnableActionsToBePlayed;
         GameManager.Instance.OnDisableActionsToBePlayed += GameManager_DisableActionsToBePlayed;
         GameManager.Instance.OnGameFinished += GameManager_GameFinished;
+        GameManager.Instance.OnResetGame += GameManager_ResetGame;
         //ActionManager.Instance.OnAllowedToAttack += ActionManager_AllowedToAttack;
         //ActionManager.Instance.OnNotAllowedToAttack += ActionManager_NotAllowedToAttack;
 
@@ -58,6 +62,9 @@ public class ActionButtonsGroup : MonoBehaviour
             { GameAction.Collect, m_collectButton },
         };
 
+        m_mainCamera = Camera.main;
+        m_offScreenDown = m_mainCamera.ViewportToWorldPoint(new(0.5f, -0.5f, m_mainCamera.nearClipPlane)).y;
+        m_buttonGroupOriginalPos = m_buttonGroup.position;
         Tween appear = m_panel.DOFade(0.5f, GameManager.k_TimePerTick / 2);
         Tween fade = m_panel.DOFade(0, GameManager.k_TimePerTick / 2);
         m_highlightActions = DOTween.Sequence().Append(appear).Append(fade).SetLoops(-1).Pause();
@@ -71,6 +78,7 @@ public class ActionButtonsGroup : MonoBehaviour
         GameManager.Instance.OnEnableActionsToBePlayed -= GameManager_EnableActionsToBePlayed;
         GameManager.Instance.OnDisableActionsToBePlayed -= GameManager_DisableActionsToBePlayed;
         GameManager.Instance.OnGameFinished -= GameManager_GameFinished;
+        GameManager.Instance.OnResetGame -= GameManager_ResetGame;
         //ActionManager.Instance.OnAllowedToAttack -= ActionManager_AllowedToAttack;
         //ActionManager.Instance.OnNotAllowedToAttack -= ActionManager_NotAllowedToAttack;
         m_attackButton.RemoveOnClickListeners();
@@ -109,6 +117,15 @@ public class ActionButtonsGroup : MonoBehaviour
         }
     }
 
+    private void EnableActions()
+    {
+        foreach (KeyValuePair<GameAction, ActionButton> actionToButton in m_actionToButton)
+        {
+            bool isActionAllowed = ActionManager.Instance.IsActionAllowed(actionToButton.Key);
+            SetButtonAllowed(actionToButton.Value, isActionAllowed);
+        }
+    }
+
     private void GameManager_PlayerGoldChange(int newAmount)
     {
         //foreach (KeyValuePair<GameAction, ActionButton> actionToButton in m_actionToButton)
@@ -136,11 +153,7 @@ public class ActionButtonsGroup : MonoBehaviour
 
     private void GameManager_EnableActionsToBePlayed()
     {
-        foreach (KeyValuePair<GameAction, ActionButton> actionToButton in m_actionToButton)
-        {
-            bool isActionAllowed = ActionManager.Instance.IsActionAllowed(actionToButton.Key);
-            SetButtonAllowed(actionToButton.Value, isActionAllowed);
-        }
+        EnableActions();
     }
 
     private void GameManager_DisableActionsToBePlayed()
@@ -148,9 +161,24 @@ public class ActionButtonsGroup : MonoBehaviour
         DisableActions();
     }
 
-    private void GameManager_GameFinished()
+    private void GameManager_GameFinished(List<MatchData> allMatchData)
     {
-        m_buttonGroup.DOMoveY(-1000, 1f).SetEase(Ease.OutSine);
+        m_buttonGroup.DOMoveY(m_offScreenDown, k_tweenDuration)
+            .SetEase(Ease.OutQuad)
+            .OnComplete(() =>
+            {
+                m_buttonGroup.gameObject.SetActive(false);
+                m_buttonGroup.position = m_buttonGroupOriginalPos;
+            });
+    }
+
+    private void GameManager_ResetGame()
+    {
+        m_buttonGroup.gameObject.SetActive(true);
+        m_buttonGroup.position = m_buttonGroupOriginalPos;
+        m_buttonGroup.DOMoveY(m_offScreenDown, k_tweenDuration)
+            .From()
+            .SetEase(Ease.OutQuad);
     }
 
     public void SetActionPlayable(GameAction gameAction, bool isActionAllowed)

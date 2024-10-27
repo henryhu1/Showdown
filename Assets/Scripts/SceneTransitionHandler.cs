@@ -64,7 +64,7 @@ public class SceneTransitionHandler : MonoBehaviour
 
     private void SwitchScene(string sceneName)
     {
-        if (NetworkManager.Singleton.IsListening)
+        if (NetworkManager.Singleton.IsListening && !NetworkManager.Singleton.ShutdownInProgress)
         {
             m_numberOfClientLoaded = 0;
             NetworkManager.Singleton.SceneManager.LoadScene(sceneName, LoadSceneMode.Single);
@@ -81,9 +81,7 @@ public class SceneTransitionHandler : MonoBehaviour
 
     private void OnLoadComplete(ulong clientId, string sceneName, LoadSceneMode loadSceneMode)
     {
-#if UNITY_EDITOR
         Debug.Log($"client #{clientId} has loaded scene {sceneName}");
-#endif
         OnClientLoadedScene?.Invoke(clientId);
         m_numberOfClientLoaded += 1;
         if (m_numberOfClientLoaded == NetworkManager.Singleton.ConnectedClients.Count)

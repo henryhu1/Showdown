@@ -11,8 +11,11 @@ public class PlayerGameData : INetworkSerializable
     private int goldTotal;
     public int GoldTotal { get { return goldTotal; } }
 
-    private int matchesWon;
-    public int MatchesWon { get { return matchesWon; } }
+    private HashSet<int> matchesWon;
+    public int NumberOfMatchesWon { get { return matchesWon.Count; } }
+
+    private bool requestedRematch;
+    public bool RequestedRematch { get { return requestedRematch; } }
 
     private List<List<GameAction>> takenActions;
     private Dictionary<GameAction, bool> allowedActions;
@@ -20,7 +23,7 @@ public class PlayerGameData : INetworkSerializable
     public PlayerGameData(ulong clientID) {
         clientId = clientID;
         goldTotal = 0;
-        matchesWon = 0;
+        matchesWon = new();
         takenActions = new();
         allowedActions = new();
         foreach (GameAction action in Enum.GetValues(typeof(GameAction)).Cast<GameAction>())
@@ -62,10 +65,29 @@ public class PlayerGameData : INetworkSerializable
         allowedActions = playable;
     }
 
-
-    public void WonMatch()
+    public void WonMatch(int atMatch)
     {
-        matchesWon++;
+        matchesWon.Add(atMatch);
+    }
+
+    public bool HasWonMatch(int match)
+    {
+        return matchesWon.Contains(match);
+    }
+
+    public List<List<GameAction>> TakenActions()
+    {
+        return takenActions;
+    }
+
+    public List<GameAction> TakenActionsInMatch(int match)
+    {
+        return takenActions[match];
+    }
+
+    public void SetRequestedRematch(bool requestedRematch)
+    {
+        this.requestedRematch = requestedRematch;
     }
 
     public bool CanPlayAction(GameAction gameAction)
@@ -102,9 +124,36 @@ public class PlayerGameData : INetworkSerializable
         takenActions.Clear();
     }
 
+    public void ResetData()
+    {
+        ClearActions();
+        SetBeginningGold();
+        requestedRematch = false;
+        matchesWon.Clear();
+    }
+
     public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
     {
+        int length = 0;
+        int[] matchesWonArray;
+
+        if (serializer.IsWriter)
+        {
+            matchesWonArray = matchesWon.ToArray();
+            length = matchesWonArray.Length;
+        }
+        else
+        {
+            matchesWonArray = new int[length];
+        }
+
         serializer.SerializeValue(ref clientId);
-        serializer.SerializeValue(ref matchesWon);
+        serializer.SerializeValue(ref matchesWonArray);
+        serializer.SerializeValue(ref length);
+
+        if (serializer.IsReader)
+        {
+            matchesWon = matchesWonArray.ToHashSet();
+        }
     }
 }

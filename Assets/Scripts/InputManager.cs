@@ -52,9 +52,14 @@ public class InputManager : MonoBehaviour
         m_playerControls.Touch.PrimaryContact.canceled -= PrimaryContact_canceled;
     }
 
+    private bool ShouldDoTouch()
+    {
+        return !SettingsUI.Instance.GetIsSettingsOpen() && !GameManager.Instance.m_IsSuddenDeath.Value && !OverGameDisplay.Instance.IsDisplaying();
+    }
+
     private void PrimaryContact_started(InputAction.CallbackContext context)
     {
-        if (!SettingsUI.Instance.GetIsSettingsOpen() && !GameManager.Instance.m_IsSuddenDeath.Value)
+        if (ShouldDoTouch())
         {
             OnStartTouch?.Invoke(GetPrimaryPosition());
         }
@@ -62,7 +67,7 @@ public class InputManager : MonoBehaviour
 
     private void PrimaryContact_canceled(InputAction.CallbackContext context)
     {
-        if (!GameManager.Instance.m_IsSuddenDeath.Value)
+        if (ShouldDoTouch())
         {
             OnEndTouch?.Invoke(GetPrimaryPosition());
         }
@@ -72,7 +77,7 @@ public class InputManager : MonoBehaviour
     {
         if (Input.acceleration.sqrMagnitude > Mathf.Pow(m_ShakeThreshold, 2))
         {
-            Debug.Log("shake");
+            ActionManager.Instance.EnqueueAction(GameAction.Attack);
         }
     }
 

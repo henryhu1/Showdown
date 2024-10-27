@@ -30,13 +30,18 @@ public class BestOfThree : MonoBehaviour
             m_matchImages.Add(matchPlayedImage);
         }
         SetAllUnplayed();
+    }
 
+    private void OnEnable()
+    {
         GameManager.Instance.OnMatchDecided += GameManager_MatchDecided;
+        GameManager.Instance.OnResetGame += GameManager_ResetGame;
     }
 
     private void OnDisable()
     {
         GameManager.Instance.OnMatchDecided -= GameManager_MatchDecided;
+        GameManager.Instance.OnResetGame -= GameManager_ResetGame;
     }
 
     private void AnimateMatchImage(int atMatch)
@@ -55,6 +60,11 @@ public class BestOfThree : MonoBehaviour
         Sprite matchResultSprite = hasPlayerWon ? m_win : m_loss;
         m_matchImages[atMatch].SetImage(matchResultSprite);
         AnimateMatchImage(atMatch);
+    }
+
+    private void GameManager_ResetGame()
+    {
+        SetAllUnplayed();
     }
 
     private void SetAllUnplayed()

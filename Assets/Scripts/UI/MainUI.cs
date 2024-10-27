@@ -25,7 +25,6 @@ public class MainUI : MonoBehaviour
         m_mainCamera = Camera.main;
         m_buttonListRectTransform = m_buttonList.GetComponent<RectTransform>();
         m_offScreenRight = m_mainCamera.ViewportToWorldPoint(new(1.5f, 0.5f, m_mainCamera.nearClipPlane)).x;
-        Debug.Log($"off screen right: {m_offScreenRight}, {m_buttonListRectTransform.rect.width}");
         m_buttonListOriginalPos = m_buttonList.transform.position;
 
         m_findGameButton.onClick.AddListener(() =>

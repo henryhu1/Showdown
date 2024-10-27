@@ -55,6 +55,10 @@ public class GoldCount : MonoBehaviour
         ActionManager.Instance.OnActionDequeue += ActionManager_ActionDequeue;
         ActionManager.Instance.OnDisallowedActionAttempted += ActionManager_DisallowedActionAttempted;
 
+        m_almostGoldWinTween = m_goldImageRectTransform
+            .DOPunchPosition(m_punchUpwards, GameManager.k_TimePerTick, vibrato: 0, elasticity: 0)
+            .SetLoops(-1)
+            .Pause();
         ResetGoldDisplay();
     }
 
@@ -110,9 +114,9 @@ public class GoldCount : MonoBehaviour
 
         if (newAmount + ActionLogic.GetGoldChange(GameAction.Collect) == GameManager.Instance.m_GoldTotalToWin.Value)
         {
-            m_almostGoldWinTween = m_goldImageRectTransform.DOPunchPosition(m_punchUpwards, GameManager.k_TimePerTick, vibrato: 0, elasticity: 0).SetLoops(-1);
+            m_almostGoldWinTween.Play();
         }
-        else if (m_almostGoldWinTween != null)
+        else
         {
             StopAlmostGoldWinAnimation();
         }
@@ -121,9 +125,9 @@ public class GoldCount : MonoBehaviour
     private void GameManager_MatchDecided(bool hasPlayerWon, MatchResult resultType)
     {
         Debug.Log($"{hasPlayerWon}, {resultType}");
+        StopAlmostGoldWinAnimation();
         if (hasPlayerWon && resultType == MatchResult.GoldReached)
         {
-            StopAlmostGoldWinAnimation();
             m_goldImageRectTransform.DOPunchRotation(m_punchRightRotation, GameManager.k_TimePerTick, vibrato: 0, elasticity: 0);
         }
     }
@@ -167,8 +171,7 @@ public class GoldCount : MonoBehaviour
 
     private void StopAlmostGoldWinAnimation()
     {
-        m_almostGoldWinTween.Kill();
-        m_almostGoldWinTween = null;
+        m_almostGoldWinTween.Pause();
         m_goldImageRectTransform.localPosition = m_goldImageRectTransformPosition;
     }
 }

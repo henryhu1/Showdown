@@ -21,6 +21,7 @@ public class LobbyDisplay : MonoBehaviour
     private const float k_tweenDuration = 0.3f;
     private const string k_waitingForOpponentText = "Waiting for\nopponent...";
     private const string k_playerJoinedText = "Opponent\njoined!";
+    private const string k_lobbyJoinedText = "Lobby joined!";
     private const string k_startingGameText = "Starting game...";
 
     private void Awake()
@@ -46,7 +47,7 @@ public class LobbyDisplay : MonoBehaviour
         LobbyManager.Instance.OnCancelLobby -= LobbyManager_CancelLobby;
         LobbyManager.Instance.OnJoinedLobby -= LobbyManager_JoinedLobby;
         LobbyManager.Instance.OnLobbyWasDeleted -= LobbyManager_LobbyWasDeleted;
-        LobbyManager.Instance.OnGameStarted += LobbyManager_GameStarted;
+        LobbyManager.Instance.OnGameStarted -= LobbyManager_GameStarted;
     }
 
     private void Start()
@@ -102,7 +103,7 @@ public class LobbyDisplay : MonoBehaviour
         m_startingGameText.enabled = true;
     }
 
-    private void Show(bool shouldDisplayText)
+    private void Show(bool isLobbyOwner = true)
     {
         if (m_panel.activeInHierarchy) return;
         if (m_transition != null) return;
@@ -113,8 +114,11 @@ public class LobbyDisplay : MonoBehaviour
             .From()
             .SetEase(Ease.OutQuad)
             .OnComplete(() => m_transition = null);
-        m_lobbyCodeText.enabled = shouldDisplayText;
-        m_lobbyStatusText.enabled = shouldDisplayText;
+        m_lobbyCodeText.enabled = isLobbyOwner;
+        m_lobbyStatusText.enabled = isLobbyOwner;
+        m_lobbyStatusText.text = isLobbyOwner ? k_startingGameText : k_lobbyJoinedText;
+
+        m_startingGameText.enabled = !isLobbyOwner;
     }
 
     private void Hide()

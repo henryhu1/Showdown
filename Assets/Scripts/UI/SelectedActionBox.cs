@@ -31,6 +31,8 @@ public class SelectedActionBox : SelectedActionBaseBehaviour
         m_selectedAction.DisableImage();
         m_selectedActionImagePosition = m_selectedAction.GetAnchoredPosition();
 
+        SetPanelOff();
+
         GameManager.Instance.OnActionsDone += GameManager_ActionsDone;
 
         base.Start();

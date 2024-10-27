@@ -7,10 +7,10 @@ public class Loading : MonoBehaviour
 {
     [SerializeField] private GameObject m_panel;
     private Image m_panelImage;
-    [SerializeField] private TextMeshProUGUI m_loadingText;
+    [SerializeField] private TextMeshProUGUI m_searchingForGameText;
     [SerializeField] private Button m_cancelButton;
 
-    private const string k_searchingGameText = "Searching for game...";
+    private const string k_searchingForGameText = "Searching for game...";
     private const string k_opponentFoundText = "Opponent found!";
     private const string k_startingGameText = "Starting game...";
     private const float k_fadeTime = 0.3f;
@@ -22,7 +22,7 @@ public class Loading : MonoBehaviour
         LobbyManager.Instance.OnSearchForGame += LobbyManager_SearchForGame;
         LobbyManager.Instance.OnCancelSearchForGame += LobbyManager_CancelSearchForGame;
         LobbyManager.Instance.OnPlayerJoinedLobby += LobbyManager_PlayerJoinedLobby;
-        LobbyManager.Instance.OnGameStarted += LobbyManager_GameStarted;
+        //LobbyManager.Instance.OnGameStarted += LobbyManager_GameStarted;
         LobbyManager.Instance.OnQuickJoinLobby += LobbyManager_QuickJoinLobby;
     }
 
@@ -31,7 +31,7 @@ public class Loading : MonoBehaviour
         LobbyManager.Instance.OnSearchForGame -= LobbyManager_SearchForGame;
         LobbyManager.Instance.OnCancelSearchForGame -= LobbyManager_CancelSearchForGame;
         LobbyManager.Instance.OnPlayerJoinedLobby -= LobbyManager_PlayerJoinedLobby;
-        LobbyManager.Instance.OnGameStarted -= LobbyManager_GameStarted;
+        //LobbyManager.Instance.OnGameStarted -= LobbyManager_GameStarted;
         LobbyManager.Instance.OnQuickJoinLobby -= LobbyManager_QuickJoinLobby;
     }
 
@@ -49,7 +49,7 @@ public class Loading : MonoBehaviour
     {
         m_panel.SetActive(true);
         m_cancelButton.gameObject.SetActive(true);
-        m_loadingText.text = k_searchingGameText;
+        m_searchingForGameText.text = k_searchingForGameText;
         m_panelImage.color = new(m_panelImage.color.r, m_panelImage.color.r, m_panelImage.color.r, k_panelAlpha);
     }
 
@@ -62,21 +62,19 @@ public class Loading : MonoBehaviour
     private void LobbyManager_PlayerJoinedLobby()
     {
         m_cancelButton.gameObject.SetActive(false);
-        m_loadingText.text = $"{k_opponentFoundText}\n{k_startingGameText}";
-        m_panelImage.DOFade(k_panelSolidAlpha, k_fadeTime).SetEase(Ease.InSine);
+        m_searchingForGameText.text = $"{k_opponentFoundText}\n{k_startingGameText}";
     }
 
-    private void LobbyManager_GameStarted(object sender, System.EventArgs e)
-    {
-        m_cancelButton.gameObject.SetActive(false);
-        m_loadingText.text = $"{k_opponentFoundText}\n{k_startingGameText}";
-        m_panelImage.DOFade(k_panelSolidAlpha, k_fadeTime).SetEase(Ease.InSine);
-    }
+    //private void LobbyManager_GameStarted(object sender, System.EventArgs e)
+    //{
+    //    m_cancelButton.gameObject.SetActive(false);
+    //    m_searchingForGameText.text = $"{k_opponentFoundText}\n{k_startingGameText}";
+    //    m_panelImage.DOFade(k_panelSolidAlpha, k_fadeTime).SetEase(Ease.InSine);
+    //}
 
     private void LobbyManager_QuickJoinLobby()
     {
         m_cancelButton.gameObject.SetActive(false);
-        m_loadingText.text = $"{k_opponentFoundText}\n{k_startingGameText}";
-        m_panelImage.DOFade(k_panelSolidAlpha, k_fadeTime).SetEase(Ease.InSine);
+        m_searchingForGameText.text = $"{k_opponentFoundText}\n{k_startingGameText}";
     }
 }

@@ -39,6 +39,17 @@ namespace GameActions
             { GameAction.Egg, ActionType.Offensive },
         };
 
+        private static readonly Dictionary<GameAction, string> actionAchievements = new()
+        {
+            { GameAction.Collect, GPGSIds.achievement_gold_digger },
+            { GameAction.Block, GPGSIds.achievement_shield },
+            { GameAction.Reflect, GPGSIds.achievement_right_back_at_ya },
+            { GameAction.Attack, GPGSIds.achievement_rock_on },
+            { GameAction.Fire, GPGSIds.achievement_gift_of_prometheus },
+            { GameAction.Water, GPGSIds.achievement_naval_warfare },
+            { GameAction.Egg, GPGSIds.achievement_eggy },
+        };
+
         public static bool Beats(GameAction action1, GameAction action2)
         {
             if (beatsMap.TryGetValue(action1, out HashSet<GameAction> beats))
@@ -93,6 +104,11 @@ namespace GameActions
             {
                 return ActionMatchupResult.Ties;
             }
+        }
+
+        public static string GetActionAchievement(GameAction action)
+        {
+            return actionAchievements[action];
         }
     }
 }

@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using Unity.Services.Authentication;
-using Unity.Services.Core;
 using Unity.Services.Lobbies;
 using Unity.Services.Lobbies.Models;
 using UnityEngine;
@@ -105,39 +104,12 @@ public class LobbyManager : MonoBehaviour
     private void Start()
     {
         m_joinedLobby = null;
-
-        Authenticate("temp" + UnityEngine.Random.Range(0, 20));
     }
 
     private void Update()
     {
         HandleLobbyHeartbeat();
         //HandleLobbyPolling();
-    }
-
-    public async void Authenticate(string playerName)
-    {
-        try
-        {
-            InitializationOptions initializationOptions = new InitializationOptions();
-            initializationOptions.SetProfile(playerName);
-
-            await UnityServices.InitializeAsync(initializationOptions);
-
-            AuthenticationService.Instance.SignedIn += () => {
-#if UNITY_EDITOR
-                Debug.Log("Signed in! " + AuthenticationService.Instance.PlayerId);
-#endif
-            };
-
-            await AuthenticationService.Instance.SignInAnonymouslyAsync();
-        }
-        catch (Exception e)
-        {
-#if UNITY_EDITOR
-            Debug.Log(e.Message);
-#endif
-        }
     }
 
     private async void HandleLobbyHeartbeat()
@@ -248,15 +220,8 @@ public class LobbyManager : MonoBehaviour
 
     public void SearchForLobby()
     {
-        try
-        {
-            OnSearchForGame?.Invoke();
-            QuickJoinLobby();
-        }
-        catch (Exception ex)
-        {
-            Debug.LogError(ex.Message);
-        }
+        OnSearchForGame?.Invoke();
+        QuickJoinLobby();
     }
 
     private Player GetPlayer()
@@ -296,15 +261,11 @@ public class LobbyManager : MonoBehaviour
             }
             //OnJoinedLobby?.Invoke(this, new LobbyEventArgs { lobby = lobby });
 
-#if UNITY_EDITOR
             Debug.Log("Created Lobby " + lobby.Name);
-#endif
         }
         catch (Exception e)
         {
-#if UNITY_EDITOR
             Debug.Log(e.Message);
-#endif
         }
     }
 
@@ -321,7 +282,7 @@ public class LobbyManager : MonoBehaviour
 
             m_joinedLobby = lobby;
 
-            LobbyEventCallbacks callbacks = new LobbyEventCallbacks();
+            LobbyEventCallbacks callbacks = new();
             callbacks.LobbyDeleted += Callbacks_LobbyDeleted;
             callbacks.DataChanged += Callbacks_DataChanged;
             await LobbyService.Instance.SubscribeToLobbyEventsAsync(lobby.Id, callbacks);
@@ -331,9 +292,7 @@ public class LobbyManager : MonoBehaviour
         }
         catch (LobbyServiceException e)
         {
-#if UNITY_EDITOR
             Debug.LogError(e.Message);
-#endif
             OnFailedToJoinLobbyByCode?.Invoke("Unable to join lobby");
         }
     }
@@ -359,9 +318,7 @@ public class LobbyManager : MonoBehaviour
         }
         catch (LobbyServiceException e)
         {
-#if UNITY_EDITOR
             Debug.LogError(e.Message);
-#endif
         }
     }
 
@@ -384,9 +341,7 @@ public class LobbyManager : MonoBehaviour
         }
         catch (LobbyServiceException e)
         {
-#if UNITY_EDITOR
             Debug.Log("Could not quick join, creating new lobby");
-#endif
             CreateLobby("automatic", LobbyType.Public, true);
         }
     }
@@ -447,9 +402,7 @@ public class LobbyManager : MonoBehaviour
             }
             catch (LobbyServiceException e)
             {
-#if UNITY_EDITOR
                 Debug.LogError(e.Message);
-#endif
             }
         }
     }
@@ -464,9 +417,7 @@ public class LobbyManager : MonoBehaviour
             }
             catch (LobbyServiceException e)
             {
-#if UNITY_EDITOR
                 Debug.LogError(e.Message);
-#endif
             }
         }
     }
@@ -483,9 +434,7 @@ public class LobbyManager : MonoBehaviour
             }
             catch (LobbyServiceException e)
             {
-#if UNITY_EDITOR
                 Debug.Log($"Could not delete lobby, {e.Message}");
-#endif
             }
         }
     }
@@ -512,9 +461,7 @@ public class LobbyManager : MonoBehaviour
             }
             catch (LobbyServiceException e)
             {
-#if UNITY_EDITOR
                 Debug.Log($"Could not start relay, {e.Message}");
-#endif
                 OnGameFailedToStart?.Invoke();
             }
         }

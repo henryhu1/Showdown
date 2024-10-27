@@ -58,9 +58,7 @@ public class RelayManager : MonoBehaviour
         }
         catch (RelayServiceException e)
         {
-#if UNITY_EDITOR
             Debug.LogError(e.Message);
-#endif
         }
     }
 }
