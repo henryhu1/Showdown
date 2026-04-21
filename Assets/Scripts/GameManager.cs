@@ -181,10 +181,11 @@ public class GameManager : NetworkBehaviour
         }
     }
 
-    private void SceneTransitionHandler_AllClientsLoadedScene()
+    private void SceneTransitionHandler_AllClientsLoadedScene(SceneState inScene)
     {
-        Debug.Log($"all clients loaded scene, is in game scene? {SceneTransitionHandler.Instance.IsInGameScene()}");
-        if (SceneTransitionHandler.Instance.IsInGameScene())
+        bool isGameScene = inScene == SceneState.GameScene;
+        Debug.Log($"all clients loaded scene, is in game scene? {isGameScene}");
+        if (isGameScene)
         {
             StartMatch();
         }
@@ -314,7 +315,6 @@ public class GameManager : NetworkBehaviour
     {
         OpponentLeftAfterMatchClientRpc();
         NetworkManager.Singleton.Shutdown();
-        SceneTransitionHandler.Instance.SetSceneState(SceneState.StartScene);
         SceneTransitionHandler.Instance.SwitchToMainMenuScene();
     }
 
@@ -506,12 +506,22 @@ public class GameManager : NetworkBehaviour
         {
             TriggerSuddenDeath();
         }
+        else
+        {
+            ResetSuddenDeath();
+        }
     }
 
     private void TriggerSuddenDeath()
     {
         m_IsSuddenDeath.Value = true;
         m_GoldTotalToWin.Value++;
+    }
+
+    private void ResetSuddenDeath()
+    {
+        m_IsSuddenDeath.Value = false;
+        m_GoldTotalToWin.Value = Mathf.Max(k_StartingGoldTotalToWin, m_GoldTotalToWin.Value - 1);
     }
 
     public int FirstTo()

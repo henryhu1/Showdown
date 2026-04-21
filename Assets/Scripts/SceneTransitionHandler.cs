@@ -11,7 +11,7 @@ public class SceneTransitionHandler : MonoBehaviour
     [HideInInspector]
     public event ClientLoadedSceneDelegateHandler OnClientLoadedScene;
     [HideInInspector]
-    public delegate void AllClientsLoadedSceneDelegateHandler();
+    public delegate void AllClientsLoadedSceneDelegateHandler(SceneState inScene);
     [HideInInspector]
     public event AllClientsLoadedSceneDelegateHandler OnAllClientsLoadedScene;
     [HideInInspector]
@@ -24,7 +24,6 @@ public class SceneTransitionHandler : MonoBehaviour
     public const string k_MainMenuScene = "StartScene";
     public const string k_InGameSceneName = "GameScene";
 
-    private SceneState m_SceneState;
 
     private void Awake()
     {
@@ -33,16 +32,6 @@ public class SceneTransitionHandler : MonoBehaviour
             Destroy(Instance.gameObject);
         }
         Instance = this;
-        Scene activeScene = SceneManager.GetActiveScene();
-        switch (activeScene.name)
-        {
-            case k_MainMenuScene:
-                SetSceneState(SceneState.StartScene);
-                break;
-            case k_InGameSceneName:
-                SetSceneState(SceneState.GameScene);
-                break;
-        }
         DontDestroyOnLoad(this);
     }
 
@@ -54,12 +43,6 @@ public class SceneTransitionHandler : MonoBehaviour
     public void UnregisterCallbacks()
     {
         NetworkManager.Singleton.SceneManager.OnLoadComplete -= OnLoadComplete;
-    }
-
-    public void SetSceneState(SceneState sceneState)
-    {
-        m_SceneState = sceneState;
-        OnSceneStateChanged?.Invoke(m_SceneState);
     }
 
     private void SwitchScene(string sceneName)
@@ -86,7 +69,8 @@ public class SceneTransitionHandler : MonoBehaviour
         m_numberOfClientLoaded += 1;
         if (m_numberOfClientLoaded == NetworkManager.Singleton.ConnectedClients.Count)
         {
-            OnAllClientsLoadedScene?.Invoke();
+            SceneState inScene = sceneName == k_InGameSceneName ? SceneState.GameScene : SceneState.StartScene;
+            OnAllClientsLoadedScene?.Invoke(inScene);
         }
     }
 
@@ -95,20 +79,9 @@ public class SceneTransitionHandler : MonoBehaviour
         return m_numberOfClientLoaded == NetworkManager.Singleton.ConnectedClients.Count;
     }
 
-    public bool IsInStartScene()
-    {
-        return m_SceneState == SceneState.StartScene;
-    }
-
-    public bool IsInGameScene()
-    {
-        return m_SceneState == SceneState.GameScene;
-    }
-
     public void ExitAndLoadStartMenu()
     {
         OnClientLoadedScene = null;
-        SetSceneState(SceneState.StartScene);
         SceneManager.LoadScene(k_MainMenuScene);
     }
 }
