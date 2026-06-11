@@ -2,4 +2,5 @@
 {
     GoldReached,
     ActionBeat,
+    AutomaticWin,
 }

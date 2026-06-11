@@ -15,13 +15,10 @@ public class SelectedActionBox : SelectedActionBaseBehaviour
     private float m_movementDistance;
     private float m_submitAnimationTime = 0.5f;
 
-    private Sequence m_tweenSequence;
     private Tween m_submitActionTween;
 
     [HideInInspector]
     public delegate void TriggerActionInteractionDelegateHandler();
-    [HideInInspector]
-    public event TriggerActionInteractionDelegateHandler OnTriggerActionInteraction;
 
     public override void Start()
     {
@@ -83,16 +80,23 @@ public class SelectedActionBox : SelectedActionBaseBehaviour
 
     private void GameManager_ActionsDone(GameAction playerAction, GameAction opponentAction)
     {
-        m_tweenSequence?.OnComplete(() =>
+        if (m_animatingDisplay == null)
         {
-            Tween selectedActionAnimation = m_animatingDisplay.DoAnimation(playerAction, opponentAction);
-            selectedActionAnimation
-                .OnComplete(() => Destroy(m_animatingDisplay.gameObject, GameManager.RoundCycle))
-                .OnKill(() => Destroy(m_animatingDisplay.gameObject, GameManager.RoundCycle))
-                .Play();
+            GameObject animating = Instantiate(m_selectedActionPrefab, transform);
+            m_animatingDisplay = animating.GetComponent<SelectedActionUIDisplay>();
+            m_animatingDisplay.SetSpriteFromGameAction(playerAction);
+            m_animatingDisplay.SetSolidImageColor();
+        }
 
-            m_tweenSequence = null;
-        });
+        if (m_submitActionTween != null && m_submitActionTween.IsActive() && !m_submitActionTween.IsComplete())
+        {
+            m_submitActionTween.Complete();
+        }
+
+        Tween selectedActionAnimation = m_animatingDisplay.DoAnimation(playerAction, opponentAction);
+        selectedActionAnimation
+            .OnComplete(() => Destroy(m_animatingDisplay.gameObject, GameManager.RoundCycle))
+            .OnKill(() => Destroy(m_animatingDisplay.gameObject, GameManager.RoundCycle));
     }
 
     private void SetPanelOff()
@@ -112,8 +116,6 @@ public class SelectedActionBox : SelectedActionBaseBehaviour
 
         m_submitActionTween = m_animatingDisplay.GetRectTransform()
             .DOAnchorPosY(m_selectedActionImagePosition.y + m_movementDistance, m_submitAnimationTime)
-            .SetEase(Ease.OutSine)
-            .OnComplete(() => OnTriggerActionInteraction?.Invoke());
-        m_tweenSequence = DOTween.Sequence().Append(m_submitActionTween);
+            .SetEase(Ease.OutSine);
     }
 }

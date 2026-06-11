@@ -63,9 +63,14 @@ public class MatchData : IEquatable<MatchData>, INetworkSerializable
         return losingPlayer;
     }
 
-    public int GetNumberOfActions()
+    public int GetWinnerNumberOfActions()
     {
         return winningActions.Length;
+    }
+
+    public int GetLoserNumberOfActions()
+    {
+        return losingActions.Length;
     }
 
     public GameAction GetAction(ulong id, int index)

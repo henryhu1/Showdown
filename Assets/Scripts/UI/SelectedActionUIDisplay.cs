@@ -1,6 +1,5 @@
 using DG.Tweening;
 using GameActions;
-using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -11,89 +10,12 @@ public class SelectedActionUIDisplay : MonoBehaviour
 
     private GameAction m_selectedAction;
 
+    private const float baseDuration = 0.33f;
     private Vector3 m_scaleXY = new(2, 2, 0);
     private Vector3 m_scaleDisappear = Vector3.zero;
     private Vector3 m_inwardsPunch = new(-0.3f, -0.3f, 0);
     private Vector3 m_outwardsPunch = new(0.3f, 0.3f, 0);
     private Vector3 m_upwardsPunch = new(0, 50, 0);
-
-    private Dictionary<ActionType, Sequence> m_actionDefaultAnimations;
-
-    private Dictionary<ActionType, Dictionary<ActionType, Tween>> m_actionInteractionAnimations;
-
-    private void Awake()
-    {
-        m_actionDefaultAnimations = new()
-        {
-            {
-                ActionType.Passive,
-                DOTween.Sequence()
-                    .Append(InwardsPunch())
-                    .Join(FadeImageColor()).Pause()
-            },
-            {
-                ActionType.Defensive,
-                DOTween.Sequence()
-                    .Append(OutwardsPunch())
-                    .Join(FadeImageColor()).Pause()
-            },
-            {
-                ActionType.Offensive,
-                DOTween.Sequence()
-                    .Append(UpwardsPunch())
-                    .Join(FadeImageColor()).Pause()
-            },
-        };
-
-        m_actionInteractionAnimations = new()
-        {
-            {
-                ActionType.Passive,
-                new()
-                {
-                    {
-                        ActionType.Offensive,
-                        DOTween.Sequence()
-                            .Append(ShakePosition())
-                            .Append(ScaleDisappear()).Pause()
-                    },
-                }
-            },
-            {
-                ActionType.Defensive,
-                new()
-                {
-                    {
-                        ActionType.Offensive,
-                        DOTween.Sequence()
-                            .Append(ExpandSize(true))
-                            .Append(InwardsPunch(multiplier: 2, isHalfTick: true))
-                            .Join(FadeImageColor()).Pause()
-                    },
-                }
-            },
-            {
-                ActionType.Offensive,
-                new()
-                {
-                    {
-                        ActionType.Passive,
-                        DOTween.Sequence()
-                            .Append(ExpandSize(true))
-                            .Join(UpwardsPunch(true))
-                            .Append(UpwardsPunch(true))
-                            .Join(FadeImageColor()).Pause()
-                    },
-                    {
-                        ActionType.Defensive,
-                        DOTween.Sequence()
-                            .Append(ShakeScale())
-                            .Append(ScaleDisappear()).Pause()
-                    },
-                }
-            },
-        };
-    }
 
     public void DisableImage()
     {
@@ -145,12 +67,12 @@ public class SelectedActionUIDisplay : MonoBehaviour
 
     public Tween FadeImageColor()
     {
-        return m_selectedActionImage.DOFade(0, GameManager.k_TimePerTick).SetEase(Ease.InQuart);
+        return m_selectedActionImage.DOFade(0, baseDuration).SetEase(Ease.InQuart);
     }
 
     public Tween ExpandSize(bool isHalfTick = false)
     {
-        float duration = GameManager.k_TimePerTick;
+        float duration = baseDuration;
         if (isHalfTick)
         {
             duration /= 2;
@@ -160,7 +82,7 @@ public class SelectedActionUIDisplay : MonoBehaviour
 
     public Tween InwardsPunch(int multiplier = 1, bool isHalfTick = false)
     {
-        float duration = GameManager.k_TimePerTick;
+        float duration = baseDuration;
         if (isHalfTick)
         {
             duration /= 2;
@@ -170,12 +92,12 @@ public class SelectedActionUIDisplay : MonoBehaviour
 
     public Tween OutwardsPunch()
     {
-        return m_rectTransform.DOPunchScale(m_outwardsPunch, GameManager.k_TimePerTick, vibrato: 0);
+        return m_rectTransform.DOPunchScale(m_outwardsPunch, baseDuration, vibrato: 0);
     }
 
     public Tween UpwardsPunch(bool isHalfTick = false)
     {
-        float duration = GameManager.k_TimePerTick;
+        float duration = baseDuration;
         if (isHalfTick)
         {
             duration /= 2;
@@ -185,12 +107,12 @@ public class SelectedActionUIDisplay : MonoBehaviour
 
     public Tween ShakePosition()
     {
-        return m_rectTransform.DOShakeAnchorPos(GameManager.k_TimePerTick);
+        return m_rectTransform.DOShakeAnchorPos(baseDuration);
     }
 
     public Tween ScaleDisappear(bool isHalfTick = false)
     {
-        float duration = GameManager.k_TimePerTick;
+        float duration = baseDuration;
         if (isHalfTick)
         {
             duration /= 2;
@@ -200,7 +122,7 @@ public class SelectedActionUIDisplay : MonoBehaviour
 
     public Tween ShakeScale(bool isHalfTick = false)
     {
-        float duration = GameManager.k_TimePerTick;
+        float duration = baseDuration;
         if (isHalfTick)
         {
             duration /= 2;
@@ -223,13 +145,48 @@ public class SelectedActionUIDisplay : MonoBehaviour
         ActionType playerActionType = ActionLogic.GetActionType(playerAction);
         ActionType opponentActionType = ActionLogic.GetActionType(opponentAction);
 
-        if (m_actionInteractionAnimations[playerActionType].TryGetValue(opponentActionType, out Tween anim))
+        Sequence animation = DOTween.Sequence();
+
+        if (playerActionType == ActionType.Passive && opponentActionType == ActionType.Offensive)
         {
-            return anim;
+            return animation
+                .Append(ShakePosition())
+                .Append(ScaleDisappear());
         }
-        else
+        if (playerActionType == ActionType.Defensive && opponentActionType == ActionType.Offensive)
         {
-            return m_actionDefaultAnimations[playerActionType];
+            return animation
+                .Append(ExpandSize(true))
+                .Append(InwardsPunch(multiplier: 2, isHalfTick: true))
+                .Join(FadeImageColor());
         }
+        if (playerActionType == ActionType.Offensive && opponentActionType == ActionType.Passive)
+        {
+            return animation
+                .Append(ExpandSize(true))
+                .Join(UpwardsPunch(true))
+                .Append(UpwardsPunch(true))
+                .Join(FadeImageColor());
+        }
+        if (playerActionType == ActionType.Offensive && opponentActionType == ActionType.Defensive)
+        {
+            return animation
+                .Append(ShakeScale())
+                .Append(ScaleDisappear());
+        }
+
+        return playerActionType switch
+        {
+            ActionType.Passive => animation
+                .Append(InwardsPunch())
+                .Join(FadeImageColor()),
+            ActionType.Defensive => animation
+                .Append(OutwardsPunch())
+                .Join(FadeImageColor()),
+            ActionType.Offensive => animation
+                .Append(UpwardsPunch())
+                .Join(FadeImageColor()),
+            _ => animation
+        };
     }
 }

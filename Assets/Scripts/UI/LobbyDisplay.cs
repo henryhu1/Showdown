@@ -34,6 +34,7 @@ public class LobbyDisplay : MonoBehaviour
     {
         LobbyManager.Instance.OnCreatedLobby += LobbyManager_CreatedLobby;
         LobbyManager.Instance.OnPlayerJoinedLobby += LobbyManager_PlayerJoinedLobby;
+        LobbyManager.Instance.OnPlayerLeftLobby += LobbyManager_PlayerLeftLobby;
         LobbyManager.Instance.OnCancelLobby += LobbyManager_CancelLobby;
         LobbyManager.Instance.OnJoinedLobby += LobbyManager_JoinedLobby;
         LobbyManager.Instance.OnLobbyWasDeleted += LobbyManager_LobbyWasDeleted;
@@ -44,6 +45,7 @@ public class LobbyDisplay : MonoBehaviour
     {
         LobbyManager.Instance.OnCreatedLobby -= LobbyManager_CreatedLobby;
         LobbyManager.Instance.OnPlayerJoinedLobby -= LobbyManager_PlayerJoinedLobby;
+        LobbyManager.Instance.OnPlayerLeftLobby -= LobbyManager_PlayerLeftLobby;
         LobbyManager.Instance.OnCancelLobby -= LobbyManager_CancelLobby;
         LobbyManager.Instance.OnJoinedLobby -= LobbyManager_JoinedLobby;
         LobbyManager.Instance.OnLobbyWasDeleted -= LobbyManager_LobbyWasDeleted;
@@ -81,6 +83,11 @@ public class LobbyDisplay : MonoBehaviour
         m_startButton.gameObject.SetActive(true);
     }
 
+    private void LobbyManager_PlayerLeftLobby()
+    {
+        Hide();
+    }
+
     private void LobbyManager_CancelLobby()
     {
         Hide();
@@ -98,6 +105,8 @@ public class LobbyDisplay : MonoBehaviour
 
     private void LobbyManager_GameStarted(object sender, System.EventArgs e)
     {
+        if (!m_panel.activeInHierarchy) return;
+
         m_startButton.gameObject.SetActive(false);
         m_startingGameText.text = k_startingGameText;
         m_startingGameText.enabled = true;
@@ -114,11 +123,13 @@ public class LobbyDisplay : MonoBehaviour
             .From()
             .SetEase(Ease.OutQuad)
             .OnComplete(() => m_transition = null);
-        m_lobbyCodeText.enabled = isLobbyOwner;
-        m_lobbyStatusText.enabled = isLobbyOwner;
-        m_lobbyStatusText.text = isLobbyOwner ? k_startingGameText : k_lobbyJoinedText;
 
-        m_startingGameText.enabled = !isLobbyOwner;
+        m_lobbyStatusText.enabled = true;
+        if (!isLobbyOwner)
+        {
+            m_lobbyStatusText.text = k_lobbyJoinedText;
+        }
+        m_lobbyCodeText.enabled = isLobbyOwner;
     }
 
     private void Hide()

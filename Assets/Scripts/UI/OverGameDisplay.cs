@@ -58,6 +58,7 @@ public class OverGameDisplay : MonoBehaviour
         m_panelRectTransform = m_panel.GetComponent<RectTransform>();
         m_offScreenUp = m_mainCamera.ViewportToWorldPoint(new(0.5f, 1.5f, m_mainCamera.nearClipPlane)).y;
         m_panelOriginalPos = m_panel.transform.position;
+        m_helpfulMessage.gameObject.SetActive(true);
         m_helpfulMessage.enabled = false;
         m_matchDataDisplay = new();
 
@@ -71,6 +72,7 @@ public class OverGameDisplay : MonoBehaviour
 
         m_leaveButton.onClick.AddListener(() =>
         {
+            m_helpfulMessage.gameObject.SetActive(false);
             GameManager.Instance.ExitGame();
         });
 
@@ -154,12 +156,14 @@ public class OverGameDisplay : MonoBehaviour
             heading.SetMatchResult(didPlayerWinMatch);
             heading.SetMatchNumber(matchData.GetMatchNumber());
 
-            for (int i = 0; i < matchData.GetNumberOfActions(); i++)
+            int winnerActionsCount = matchData.GetWinnerNumberOfActions();
+            int loserActionsCount = matchData.GetLoserNumberOfActions();
+            for (int i = 0; i < Mathf.Max(winnerActionsCount, loserActionsCount) ; i++)
             {
                 RoundLog item = Instantiate(m_roundLogPrefab, m_afterGameContent.transform);
                 m_matchDataDisplay.Add(item.gameObject);
-                item.SetMyRoundAction(matchData.GetAction(myId, i));
-                item.SetOpponentRoundAction(matchData.GetAction(opponentId, i));
+                if (i < winnerActionsCount) item.SetMyRoundAction(matchData.GetAction(myId, i));
+                if (i < loserActionsCount) item.SetOpponentRoundAction(matchData.GetAction(opponentId, i));
             }
         }
     }

@@ -6,6 +6,8 @@ using UnityEngine;
 using GameActions;
 using UnityEngine.SceneManagement;
 using DG.Tweening;
+using GooglePlayGames;
+using System;
 
 [DefaultExecutionOrder(-100)]
 public class GameManager : NetworkBehaviour
@@ -20,13 +22,18 @@ public class GameManager : NetworkBehaviour
     public const float k_TimePerTick = 0.66f;
     public static float RoundCycle { get { return k_TicksPerRound * k_TimePerTick; } }
 
+    public const float k_TimeoutThreshold = 10;
+
     private Dictionary<ulong, PlayerGameData> m_PlayerGameData;
+    private Dictionary<ulong, float> m_PlayerHeartbeat;
+    private float m_ServerSentHeartbeat;
 
     public NetworkVariable<int> m_AtMatch = new(0);
     public NetworkVariable<int> m_GoldTotalToWin = new(k_StartingGoldTotalToWin);
     public NetworkVariable<bool> m_IsSuddenDeath = new(false);
 
     public Coroutine m_TickCoroutine;
+    public Coroutine m_HeartbeatCoroutine;
 
     [HideInInspector]
     public delegate void PlayerGoldChangeDelegateHandler(int newAmount);
@@ -122,6 +129,7 @@ public class GameManager : NetworkBehaviour
     private void Start()
     {
         m_PlayerGameData = new Dictionary<ulong, PlayerGameData>();
+        m_PlayerHeartbeat = new Dictionary<ulong, float>();
     }
 
     private void Update()
@@ -154,6 +162,7 @@ public class GameManager : NetworkBehaviour
         if (IsServer)
         {
             m_PlayerGameData.Clear();
+            m_PlayerHeartbeat.Clear();
             m_AtMatch.Value = 0;
 
             SceneTransitionHandler.Instance.RegisterCallbacks();
@@ -175,6 +184,7 @@ public class GameManager : NetworkBehaviour
         if (IsServer)
         {
             m_PlayerGameData.Clear();
+            m_PlayerHeartbeat.Clear();
             SceneTransitionHandler.Instance.UnregisterCallbacks();
             SceneTransitionHandler.Instance.OnAllClientsLoadedScene -= SceneTransitionHandler_AllClientsLoadedScene;
             NetworkManager.Singleton.OnClientConnectedCallback -= OnClientConnected;
@@ -216,10 +226,7 @@ public class GameManager : NetworkBehaviour
 
     private void OnClientDisconnect(ulong clientId)
     {
-        if (StopGameClock())
-        {
-            ExitGame();
-        }
+        StopGameClock();
     }
 
     private void AddPlayerGameData(ulong clientId)
@@ -238,6 +245,7 @@ public class GameManager : NetworkBehaviour
 
         PlayerGameData playerGameData = new(clientId);
         m_PlayerGameData.Add(clientId, playerGameData);
+        m_PlayerHeartbeat.Add(clientId, Time.time);
 
         Debug.LogFormat("Player {0} in game, now have {1} player(s)", clientId, NetworkManager.Singleton.ConnectedClients.Count);
         if (NetworkManager.Singleton.ConnectedClients.Count == k_PlayersPerGame)
@@ -264,6 +272,7 @@ public class GameManager : NetworkBehaviour
         foreach (var playerData in m_PlayerGameData)
         {
             playerData.Value.SetupDataForNewMatch();
+            m_PlayerHeartbeat[playerData.Key] = Time.time;
             Debug.Log("new match!!");
             SetupPlayerActionsGivenGoldClientRpc(playerData.Value.GoldTotal, RpcTarget.Single(playerData.Key, RpcTargetUse.Temp));
             // TODO: clean up logic for resetting opponent tower sprite
@@ -276,16 +285,24 @@ public class GameManager : NetworkBehaviour
         OnStartMatchForServer?.Invoke();
 
         StartGameClockRpc();
+        StartHeartbeatsRpc();
 
         m_AtMatch.Value++;
     }
 
-    private void FinishGame(ulong winner, ulong loser)
+    private void FinishGame(ulong winner, ulong? loser)
     {
         List<MatchData> allMatchData = new();
         for (int i = 0; i < m_AtMatch.Value; i++)
         {
-            allMatchData.Add(new());
+            if (!loser.HasValue)
+            {
+                allMatchData.Add(new(i + 1, winner, Array.Empty<GameAction>(), 0, Array.Empty<GameAction>()));
+            }
+            else
+            {
+                allMatchData.Add(new());
+            }
         }
 
         foreach (var playerData in m_PlayerGameData)
@@ -308,7 +325,11 @@ public class GameManager : NetworkBehaviour
             }
         }
         GameFinishedWinnerClientRpc(allMatchData.ToArray(), RpcTarget.Single(winner, RpcTargetUse.Temp));
-        GameFinishedClientRpc(allMatchData.ToArray(), RpcTarget.Single(loser, RpcTargetUse.Temp));
+
+        if (loser.HasValue)
+        {
+            GameFinishedClientRpc(allMatchData.ToArray(), RpcTarget.Single(loser.Value, RpcTargetUse.Temp));
+        }
     }
 
     public void ExitGame()
@@ -325,6 +346,29 @@ public class GameManager : NetworkBehaviour
         foreach (var playerData in m_PlayerGameData.Values)
         {
             playerData.ClearActions();
+        }
+    }
+
+    private IEnumerator StartHeartbeat()
+    {
+        float time = 0;
+        while (true)
+        {
+            time += Time.deltaTime;
+            if (time > 2)
+            {
+                SendHeartbeatServerRpc();
+                time = 0;
+            }
+
+            if (Time.time - m_ServerSentHeartbeat > k_TimeoutThreshold)
+            {
+                MatchDecidedClientRpc(true, MatchResult.AutomaticWin, RpcTarget.Single(GetPlayerId(), RpcTargetUse.Temp));
+                FinishGame(GetPlayerId(), null);
+                break;
+            }
+
+            yield return null;
         }
     }
 
@@ -540,7 +584,7 @@ public class GameManager : NetworkBehaviour
         MatchDecidedClientRpc(true, resultType, RpcTarget.Single(winner, RpcTargetUse.Temp));
 
         m_PlayerGameData[winner].WonMatch(m_AtMatch.Value);
-        if (m_PlayerGameData[winner].NumberOfMatchesWon == FirstTo())
+        if (resultType == MatchResult.AutomaticWin || m_PlayerGameData[winner].NumberOfMatchesWon == FirstTo())
         {
             Debug.Log($"after match {m_AtMatch.Value}, player {winner} has reached {FirstTo()} matches won, stopping game");
             FinishGame(winner, loser);
@@ -564,15 +608,13 @@ public class GameManager : NetworkBehaviour
         }
     }
 
-    private bool StopGameClock()
+    private void StopGameClock()
     {
         if (m_TickCoroutine != null)
         {
             StopCoroutine(m_TickCoroutine);
             m_TickCoroutine = null;
-            return true;
         }
-        return false;
     }
 
     [Rpc(SendTo.Everyone)]
@@ -580,6 +622,38 @@ public class GameManager : NetworkBehaviour
     {
         StopGameClock();
         m_TickCoroutine = StartCoroutine(StartRoundCountdown());
+    }
+
+    [Rpc(SendTo.Everyone)]
+    public void StartHeartbeatsRpc()
+    {
+        m_ServerSentHeartbeat = Time.time;
+        m_HeartbeatCoroutine = StartCoroutine(StartHeartbeat());
+    }
+
+    [Rpc(SendTo.SpecifiedInParams)]
+    public void RespondHeartbeatClientRpc(RpcParams rpcParams)
+    {
+        m_ServerSentHeartbeat = Time.time;
+    }
+
+    [ServerRpc(RequireOwnership = false)]
+    public void SendHeartbeatServerRpc(ServerRpcParams serverRpcParams = default)
+    {
+        ulong sender = serverRpcParams.Receive.SenderClientId;
+        m_PlayerHeartbeat[sender] = Time.time;
+
+        RespondHeartbeatClientRpc(RpcTarget.Single(sender, RpcTargetUse.Temp));
+
+        if (m_TickCoroutine == null) return;
+
+        foreach (var heartbeat in m_PlayerHeartbeat)
+        {
+            if (Time.time - heartbeat.Value > k_TimeoutThreshold)
+            {
+                MatchDecided(m_PlayerHeartbeat.Keys.First(id => id != heartbeat.Key), heartbeat.Key, MatchResult.AutomaticWin);
+            }
+        }
     }
 
     [Rpc(SendTo.SpecifiedInParams)]
@@ -599,12 +673,10 @@ public class GameManager : NetworkBehaviour
     [Rpc(SendTo.SpecifiedInParams)]
     public void ActionsDoneClientRpc(GameAction playerAction, GameAction opponentAction, RpcParams rpcParams)
     {
-#if DEBUG
-        Social.ReportProgress(ActionLogic.GetActionAchievement(playerAction), 100.0f, (bool success) =>
+        PlayGamesPlatform.Instance.UnlockAchievement(ActionLogic.GetActionAchievement(playerAction), (bool success) =>
         {
 
         });
-#endif
         OnActionsDone?.Invoke(playerAction, opponentAction);
         m_TickCoroutine = StartCoroutine(TickCount());
     }
@@ -663,14 +735,13 @@ public class GameManager : NetworkBehaviour
     public void MatchDecidedClientRpc(bool hasPlayerWon, MatchResult resultType, RpcParams rpcParams)
     {
         StopGameClock();
+        StopCoroutine(m_HeartbeatCoroutine);
         Debug.LogFormat("has this player won? {0}", hasPlayerWon);
         if (hasPlayerWon)
         {
-#if DEBUG
-            Social.ReportProgress(GPGSIds.achievement_are_ya_winning, 100.0f, (bool success) => {
+            PlayGamesPlatform.Instance.UnlockAchievement(GPGSIds.achievement_are_ya_winning, (bool success) => {
                 // handle success or failure
             });
-#endif
         }
         OnMatchDecided?.Invoke(hasPlayerWon, resultType);
         OnDisableActionsToBePlayed?.Invoke();
@@ -721,7 +792,7 @@ public class GameManager : NetworkBehaviour
     [Rpc(SendTo.SpecifiedInParams)]
     public void GameFinishedClientRpc(MatchData[] matchData, RpcParams rpcParams)
     {
-        if (matchData == null || matchData.Length == 0) return;
+        // if (matchData == null || matchData.Length == 0) return;
 
         StopGameClock();
         OnGameFinished?.Invoke(matchData.ToList());
@@ -730,14 +801,13 @@ public class GameManager : NetworkBehaviour
     [Rpc(SendTo.SpecifiedInParams)]
     public void GameFinishedWinnerClientRpc(MatchData[] matchData, RpcParams rpcParams)
     {
-        if (matchData == null || matchData.Length == 0) return;
+        // if (matchData == null || matchData.Length == 0) return;
+        Debug.Log("Game finished, you are the winner!");
 
         StopGameClock();
         OnGameFinished?.Invoke(matchData.ToList());
-#if DEBUG
-        Social.ReportProgress(GPGSIds.achievement_youre_the_best_around, 100.0f, (bool success) => {
+        PlayGamesPlatform.Instance.UnlockAchievement(GPGSIds.achievement_youre_the_best_around, (bool success) => {
             // handle success or failure
         });
-#endif
     }
 }

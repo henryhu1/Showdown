@@ -20,48 +20,59 @@ public class Loading : MonoBehaviour
     private void OnEnable()
     {
         LobbyManager.Instance.OnSearchForGame += LobbyManager_SearchForGame;
+        LobbyManager.Instance.OnSearchForGameFailed += LobbyManager_SearchForGameFailed;
         LobbyManager.Instance.OnCancelSearchForGame += LobbyManager_CancelSearchForGame;
         LobbyManager.Instance.OnPlayerJoinedLobby += LobbyManager_PlayerJoinedLobby;
         //LobbyManager.Instance.OnGameStarted += LobbyManager_GameStarted;
         LobbyManager.Instance.OnQuickJoinLobby += LobbyManager_QuickJoinLobby;
+        LobbyManager.Instance.OnPlayerLeftLobby += LobbyManager_PlayerLeftLobby;
     }
 
     private void OnDisable()
     {
         LobbyManager.Instance.OnSearchForGame -= LobbyManager_SearchForGame;
+        LobbyManager.Instance.OnSearchForGameFailed -= LobbyManager_SearchForGameFailed;
         LobbyManager.Instance.OnCancelSearchForGame -= LobbyManager_CancelSearchForGame;
         LobbyManager.Instance.OnPlayerJoinedLobby -= LobbyManager_PlayerJoinedLobby;
         //LobbyManager.Instance.OnGameStarted -= LobbyManager_GameStarted;
         LobbyManager.Instance.OnQuickJoinLobby -= LobbyManager_QuickJoinLobby;
+        LobbyManager.Instance.OnPlayerLeftLobby -= LobbyManager_PlayerLeftLobby;
     }
 
     private void Start()
     {
         m_panelImage = m_panel.GetComponent<Image>();
-
-        m_cancelButton.onClick.AddListener(() =>
-        {
-            LobbyManager.Instance.CancelSearchForGame();
-        });
     }
 
     private void LobbyManager_SearchForGame()
     {
-        m_panel.SetActive(true);
-        m_cancelButton.gameObject.SetActive(true);
+        Show();
         m_searchingForGameText.text = k_searchingForGameText;
-        m_panelImage.color = new(m_panelImage.color.r, m_panelImage.color.r, m_panelImage.color.r, k_panelAlpha);
+    }
+
+    private void LobbyManager_SearchForGameFailed()
+    {
+        Hide();
     }
 
     private void LobbyManager_CancelSearchForGame()
     {
-        m_panel.SetActive(false);
-        m_panelImage.color = new(m_panelImage.color.r, m_panelImage.color.r, m_panelImage.color.r, k_panelAlpha);
+        Hide();
     }
 
     private void LobbyManager_PlayerJoinedLobby()
     {
-        m_cancelButton.gameObject.SetActive(false);
+        m_searchingForGameText.text = $"{k_opponentFoundText}\n{k_startingGameText}";
+
+        m_cancelButton.onClick.AddListener(() =>
+        {
+            LobbyManager.Instance.CancelLobby();
+        });
+    }
+
+    private void LobbyManager_PlayerLeftLobby()
+    {
+        Hide();
         m_searchingForGameText.text = $"{k_opponentFoundText}\n{k_startingGameText}";
     }
 
@@ -74,7 +85,27 @@ public class Loading : MonoBehaviour
 
     private void LobbyManager_QuickJoinLobby()
     {
-        m_cancelButton.gameObject.SetActive(false);
         m_searchingForGameText.text = $"{k_opponentFoundText}\n{k_startingGameText}";
+
+        m_cancelButton.onClick.AddListener(() =>
+        {
+            LobbyManager.Instance.CancelLobby();
+        });
+    }
+
+    private void Show()
+    {
+        m_panel.SetActive(true);
+        m_cancelButton.gameObject.SetActive(true);
+
+        m_cancelButton.onClick.AddListener(() =>
+        {
+            LobbyManager.Instance.CancelSearchForGame();
+        });
+    }
+
+    private void Hide()
+    {
+        m_panel.SetActive(false);
     }
 }

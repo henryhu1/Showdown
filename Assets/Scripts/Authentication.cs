@@ -7,44 +7,60 @@ using System;
 using Unity.Services.Authentication;
 using Unity.Services.Core;
 using UnityEngine;
+using TMPro;
 
 public class Authentication : MonoBehaviour
 {
     public string Token;
     public string Error;
+#if DEBUG
+    public TextMeshProUGUI m_statusTextTemp;
+#endif
 
-    async void Awake()
+    void Start()
     {
-        await Authenticate();
+        Authenticate();
     }
 
-    public async Task Authenticate()
+    async void Authenticate()
     {
-        Debug.Log("authenticating");
+#if DEBUG
+        m_statusTextTemp.text = "Authenticating...";
+#endif
         try
         {
             await UnityServices.InitializeAsync();
 
+#if DEBUG
             AuthenticationService.Instance.SignedIn += () => {
-                Debug.Log("Signed in! " + AuthenticationService.Instance.PlayerId);
+                m_statusTextTemp.text = "Signed in! " + AuthenticationService.Instance.PlayerId;
             };
+#endif
             await AuthenticationService.Instance.SignInAnonymouslyAsync();
 #if UNITY_ANDROID
             PlayGamesPlatform.Activate();
             PlayGamesPlatform.DebugLogEnabled = true;
             if (ShouldLinkAccount())
             {
+#if DEBUG
+                m_statusTextTemp.text = "Linking to Google Play Games...";
+#endif
                 LinkGooglePlayGames();
             }
             else
             {
+#if DEBUG
+                m_statusTextTemp.text = "Logging in to Google Play Games...";
+#endif
                 LoginGooglePlayGames();
             }
 #endif
         }
         catch (Exception e)
         {
-            Debug.Log(e.Message);
+#if DEBUG
+            m_statusTextTemp.text = e.Message;
+#endif
         }
     }
 
@@ -58,24 +74,28 @@ public class Authentication : MonoBehaviour
 
     public void LoginGooglePlayGames()
     {
-        Debug.Log("login google play games");
-        PlayGamesPlatform.Instance.Authenticate((success) =>
+       PlayGamesPlatform.Instance.Authenticate((success) =>
         {
             if (success == SignInStatus.Success)
             {
-                Debug.Log("Login with Google Play games successful.");
+#if DEBUG
+                m_statusTextTemp.text = "Login with Google Play games successful.";
+#endif
 
                 PlayGamesPlatform.Instance.RequestServerSideAccess(true, async code =>
                 {
+#if DEBUG
                     Debug.Log("Authorization code: " + code);
+#endif
                     Token = code;
                     await SignInWithGooglePlayGamesAsync(Token);
                 });
             }
             else
             {
-                Error = "Failed to retrieve Google play games authorization code";
-                Debug.Log("Login Unsuccessful");
+#if DEBUG
+                m_statusTextTemp.text = "Failed to retrieve Google play games authorization code.";
+#endif
             }
         });
     }
@@ -85,30 +105,37 @@ public class Authentication : MonoBehaviour
         try
         {
             await AuthenticationService.Instance.SignInWithGooglePlayGamesAsync(authCode);
-            Debug.Log("SignIn is successful.");
+#if DEBUG
+            m_statusTextTemp.text = "SignIn is successful.";
+#endif
         }
         catch (AuthenticationException ex)
         {
             // Compare error code to AuthenticationErrorCodes
             // Notify the player with the proper error message
-            Debug.LogException(ex);
+#if DEBUG
+            m_statusTextTemp.text = ex.Message;
+#endif
         }
         catch (RequestFailedException ex)
         {
             // Compare error code to CommonErrorCodes
             // Notify the player with the proper error message
-            Debug.LogException(ex);
+#if DEBUG
+            m_statusTextTemp.text = ex.Message;
+#endif
         }
     }
 
     public void LinkGooglePlayGames()
     {
-        Debug.Log("link google play games");
         PlayGamesPlatform.Instance.Authenticate((status) =>
         {
             if (status == SignInStatus.Success)
             {
-                Debug.Log("Google Play Games authentication successful.");
+#if DEBUG
+                m_statusTextTemp.text = "Google Play Games authentication successful.";
+#endif
 
                 // Request server-side access to get the authorization code
                 PlayGamesPlatform.Instance.RequestServerSideAccess(true, async (authCode) =>
@@ -121,7 +148,9 @@ public class Authentication : MonoBehaviour
             }
             else
             {
-                Debug.LogError("Failed to authenticate with Google Play Games.");
+#if DEBUG
+                m_statusTextTemp.text = "Failed to link Google Play Games.";
+#endif
             }
         });
     }
@@ -131,25 +160,33 @@ public class Authentication : MonoBehaviour
         try
         {
             await AuthenticationService.Instance.LinkWithGooglePlayGamesAsync(authCode);
-            Debug.Log("Link is successful.");
+#if DEBUG
+            m_statusTextTemp.text = "Link is successful.";
+#endif
         }
         catch (AuthenticationException ex) when (ex.ErrorCode == AuthenticationErrorCodes.AccountAlreadyLinked)
         {
             // Prompt the player with an error message.
-            Debug.LogError("This user is already linked with another account. Log in instead.");
+#if DEBUG
+            m_statusTextTemp.text = "This user is already linked with another account. Log in instead.";
+#endif
         }
 
         catch (AuthenticationException ex)
         {
             // Compare error code to AuthenticationErrorCodes
             // Notify the player with the proper error message
-            Debug.LogException(ex);
+#if DEBUG
+            m_statusTextTemp.text = ex.Message;
+#endif
         }
         catch (RequestFailedException ex)
         {
             // Compare error code to CommonErrorCodes
             // Notify the player with the proper error message
-            Debug.LogException(ex);
+#if DEBUG
+            m_statusTextTemp.text = ex.Message;
+#endif
         }
     }
 
@@ -162,7 +199,9 @@ public class Authentication : MonoBehaviour
         }
         else
         {
-            Debug.LogWarning("Cannot unlink Google Play Games because the user is not signed in.");
+#if DEBUG
+            m_statusTextTemp.text = "Cannot unlink Google Play Games because the user is not signed in.";
+#endif
         }
     }
 
@@ -171,19 +210,25 @@ public class Authentication : MonoBehaviour
         try
         {
             await AuthenticationService.Instance.UnlinkGooglePlayGamesAsync();
-            Debug.Log("Unlink is successful.");
+#if DEBUG
+            m_statusTextTemp.text = "Unlink is successful.";
+#endif
         }
         catch (AuthenticationException ex)
         {
             // Compare error code to AuthenticationErrorCodes
             // Notify the player with the proper error message
-            Debug.LogException(ex);
+#if DEBUG
+            m_statusTextTemp.text = ex.Message;
+#endif
         }
         catch (RequestFailedException ex)
         {
             // Compare error code to CommonErrorCodes
             // Notify the player with the proper error message
-            Debug.LogException(ex);
+#if DEBUG
+            m_statusTextTemp.text = ex.Message;
+#endif
         }
     }
 #endif

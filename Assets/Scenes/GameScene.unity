@@ -560,7 +560,11 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 465977764991220551, guid: a0e295a6d0b596041a48e2fbb793c3d4, type: 3}
       propertyPath: m_text
-      value: 1
+      value: +1
+      objectReference: {fileID: 0}
+    - target: {fileID: 465977764991220551, guid: a0e295a6d0b596041a48e2fbb793c3d4, type: 3}
+      propertyPath: 'm_ActiveFontFeatures.Array.data[0]'
+      value: 1801810542
       objectReference: {fileID: 0}
     - target: {fileID: 1102845197574617780, guid: a0e295a6d0b596041a48e2fbb793c3d4, type: 3}
       propertyPath: m_Pivot.x

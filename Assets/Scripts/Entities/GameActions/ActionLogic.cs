@@ -22,9 +22,9 @@ namespace GameActions
             { GameAction.Collect, new() },
             { GameAction.Block, new() },
             { GameAction.Attack, new() { GameAction.Collect, GameAction.Egg, } },
-            { GameAction.Fire, new() { GameAction.Collect, GameAction.Fire, GameAction.Egg, } },
+            { GameAction.Fire, new() { GameAction.Collect, GameAction.Attack, GameAction.Block, } },
             { GameAction.Water, new() { GameAction.Collect, GameAction.Attack, GameAction.Fire, } },
-            { GameAction.Egg, new() { GameAction.Collect, GameAction.Water, GameAction.Reflect, } },
+            { GameAction.Egg, new() { GameAction.Collect, GameAction.Fire, GameAction.Water, GameAction.Reflect, } },
             { GameAction.Reflect, new() { GameAction.Attack, } },
         };
 

@@ -4,6 +4,7 @@ using Unity.Services.Authentication;
 using Unity.Services.Lobbies;
 using Unity.Services.Lobbies.Models;
 using UnityEngine;
+using UnityEngine.Events;
 
 [DefaultExecutionOrder(-1)]
 public class LobbyManager : MonoBehaviour
@@ -23,6 +24,10 @@ public class LobbyManager : MonoBehaviour
     [HideInInspector]
     public event SearchForGameDelegateHandler OnSearchForGame;
 
+    public UnityAction OnSearchForGameFailed;
+    public UnityAction OnCloseHowToPlay;
+    public UnityAction OnShowHowToPlay;
+
     [HideInInspector]
     public delegate void CreatedLobbyDelegateHandler(string lobbyCode);
     [HideInInspector]
@@ -32,6 +37,11 @@ public class LobbyManager : MonoBehaviour
     public delegate void PlayerJoinedLobbyDelegateHandler();
     [HideInInspector]
     public event PlayerJoinedLobbyDelegateHandler OnPlayerJoinedLobby;
+
+    [HideInInspector]
+    public delegate void PlayerLeftLobbyDelegateHandler();
+    [HideInInspector]
+    public event PlayerLeftLobbyDelegateHandler OnPlayerLeftLobby;
 
     [HideInInspector]
     public delegate void QuickJoinLobbyDelegateHandler();
@@ -151,7 +161,6 @@ public class LobbyManager : MonoBehaviour
                     if (!IsLobbyHost())
                     {
                         RelayManager.Instance.JoinRelay(m_joinedLobby.Data[KEY_START_GAME].Value);
-                        SceneTransitionHandler.Instance.SetSceneState(SceneState.GameScene);
                         OnGameStarted?.Invoke(this, EventArgs.Empty);
                     }
 
@@ -221,7 +230,14 @@ public class LobbyManager : MonoBehaviour
     public void SearchForLobby()
     {
         OnSearchForGame?.Invoke();
-        QuickJoinLobby();
+        try
+        {
+            QuickJoinLobby();
+        }
+        catch (Exception e)
+        {
+            OnSearchForGameFailed?.Invoke();
+        }
     }
 
     private Player GetPlayer()
@@ -265,7 +281,7 @@ public class LobbyManager : MonoBehaviour
         }
         catch (Exception e)
         {
-            Debug.Log(e.Message);
+            throw new Exception($"Failed to create lobby: {e.Message}");
         }
     }
 
@@ -275,7 +291,7 @@ public class LobbyManager : MonoBehaviour
         {
             Player player = GetPlayer();
 
-            Lobby lobby = await LobbyService.Instance.JoinLobbyByCodeAsync(joinCode, new JoinLobbyByCodeOptions
+            Lobby lobby = await LobbyService.Instance.JoinLobbyByCodeAsync(joinCode.ToUpper(), new JoinLobbyByCodeOptions
             {
                 Player = player
             });
@@ -357,7 +373,6 @@ public class LobbyManager : MonoBehaviour
         //    Debug.Log($"in lobby {p.Id}");
         //}
         OnPlayerJoinedLobby?.Invoke();
-        SceneTransitionHandler.Instance.SetSceneState(SceneState.GameScene);
         StartGame();
     }
 
@@ -367,11 +382,14 @@ public class LobbyManager : MonoBehaviour
         {
             Debug.Log($"player at index {i} left lobby");
         }
+        RelayManager.Instance.LeaveRelay();
+        OnPlayerLeftLobby?.Invoke();
     }
 
     private void Callbacks_LobbyDeleted()
     {
         m_joinedLobby = null;
+        RelayManager.Instance.LeaveRelay();
         OnLobbyWasDeleted?.Invoke();
     }
 
@@ -381,9 +399,7 @@ public class LobbyManager : MonoBehaviour
         if (!string.IsNullOrEmpty(obj[KEY_START_GAME].Value.Value))
         {
             RelayManager.Instance.JoinRelay(obj[KEY_START_GAME].Value.Value);
-            SceneTransitionHandler.Instance.SetSceneState(SceneState.GameScene);
             OnGameStarted?.Invoke(this, EventArgs.Empty);
-            m_joinedLobby = null;
         }
     }
 
@@ -394,6 +410,7 @@ public class LobbyManager : MonoBehaviour
             try
             {
                 await LobbyService.Instance.RemovePlayerAsync(m_joinedLobby.Id, AuthenticationService.Instance.PlayerId);
+                RelayManager.Instance.LeaveRelay();
 
                 m_joinedLobby = null;
 
@@ -424,11 +441,12 @@ public class LobbyManager : MonoBehaviour
 
     public async void DeleteLobby()
     {
-        if (IsLobbyHost())
+        if (IsLobbyHost() && m_joinedLobby != null)
         {
             try
             {
                 await Lobbies.Instance.DeleteLobbyAsync(m_joinedLobby.Id);
+                RelayManager.Instance.LeaveRelay();
                 m_joinedLobby = null;
                 Debug.Log($"Deleted lobby");
             }

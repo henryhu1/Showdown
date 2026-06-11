@@ -61,4 +61,9 @@ public class RelayManager : MonoBehaviour
             Debug.LogError(e.Message);
         }
     }
+
+    public void LeaveRelay()
+    {
+        NetworkManager.Singleton.Shutdown();
+    }
 }

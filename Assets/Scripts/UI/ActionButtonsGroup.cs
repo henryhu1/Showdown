@@ -36,8 +36,10 @@ public class ActionButtonsGroup : MonoBehaviour
         }
         Instance = this;
 
-        m_attackButton.SetButtonText(ActionLogic.GetGoldChange(GameAction.Attack).ToString());
-        m_collectButton.SetButtonText(ActionLogic.GetGoldChange(GameAction.Collect).ToString());
+        int attackCost = ActionLogic.GetGoldChange(GameAction.Attack);
+        int collectCost = ActionLogic.GetGoldChange(GameAction.Collect);
+        m_attackButton.SetButtonText(GetActionCostText(attackCost));
+        m_collectButton.SetButtonText(GetActionCostText(collectCost));
     }
 
     private void Start()
@@ -205,4 +207,6 @@ public class ActionButtonsGroup : MonoBehaviour
     {
         return m_actionToButton[action].getButtonRectTransform();
     }
+
+    private string GetActionCostText(int cost) => cost > 0 ? $"+{cost}" : cost.ToString();
 }
